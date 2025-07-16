@@ -25,6 +25,7 @@ interface RainfallBarChartProps {
     start?: string
     end?: string
   }
+  selectedLocation?: string 
 }
 
 export function RainfallBarChart({ 
@@ -33,11 +34,116 @@ export function RainfallBarChart({
   orientation = "vertical",
   showComparison = false,
   comparisonData,
-  dateRange
+  dateRange,
+  selectedLocation
 }: RainfallBarChartProps) {
+  
+  console.log('RainfallBarChart props:', { 
+    dataLength: data.length, 
+    type, 
+    selectedLocation, 
+    dateRange,
+    sampleData: data.slice(0, 3)
+  })
   
   // Aggregate data by location when type is "location-total"
   const getAggregatedData = () => {
+    // If a specific location is selected and we're in monthly-location-total mode,
+    // show daily data for that location instead of aggregated totals
+    if (type === "monthly-location-total" && selectedLocation && selectedLocation !== "all") {
+      console.log('=== DEBUGGING LOCATION FILTER ===')
+      console.log('Selected location:', selectedLocation)
+      console.log('Data sample:', data.slice(0, 3))
+      
+      // Filter data for the selected location and group by day
+      // Handle both location codes (GSW-PIT) and full names (Gosowong Pit)
+      const locationData = data.filter(item => {
+        if (!item.location) return false
+        
+        console.log('Checking item:', item.location, 'vs selected:', selectedLocation)
+        
+        // Direct match first
+        if (item.location === selectedLocation) {
+          console.log('Direct match found!')
+          return true
+        }
+        
+        // Map common location codes to names for matching
+        const locationMap: { [key: string]: string[] } = {
+          "GSW-PIT": ["Gosowong Pit", "gosowong pit", "GSW-PIT"],
+          "GSW-DP3": ["Gosowong Helipad (DP3)", "gosowong dp3", "GSW-DP3"],  
+          "TSF": ["Tailing dam (TSF)", "tsf", "TSF"],
+          "KNC-PRT": ["Kencana (Portal)", "knc port", "KNC-PRT"],
+          "TGR-PRT": ["Toguraci (Portal)", "tgr port", "TGR-PRT"],
+          "GSW-NTH": ["Gosowong North", "gosowong north", "GSW-NTH"]
+        }
+        
+        // Also create reverse mapping (name to code)
+        const reverseMap: { [key: string]: string } = {}
+        Object.entries(locationMap).forEach(([code, names]) => {
+          names.forEach(name => {
+            reverseMap[name.toLowerCase()] = code
+          })
+        })
+        
+        // Check if the selectedLocation matches any alias for this item's location
+        const aliases = locationMap[item.location] || []
+        const directMatch = aliases.some(alias => 
+          alias.toLowerCase() === selectedLocation.toLowerCase()
+        )
+        
+        // Also check reverse mapping
+        const selectedCode = reverseMap[selectedLocation.toLowerCase()]
+        const codeMatch = selectedCode === item.location
+        
+        if (directMatch || codeMatch) {
+          console.log('Match found via mapping!')
+          return true
+        }
+        
+        return false
+      })
+      
+      console.log('Filtered location data count:', locationData.length)
+      console.log('Sample filtered data:', locationData.slice(0, 3))
+      
+      // If we have a date range, filter by it, otherwise use current month
+      let filteredData = locationData
+      if (dateRange?.start) {
+        const startDate = new Date(dateRange.start)
+        const endDate = dateRange.end ? new Date(dateRange.end) : new Date(dateRange.start)
+        filteredData = locationData.filter(item => {
+          if (item.date) {
+            const itemDate = new Date(item.date)
+            return itemDate >= startDate && itemDate <= endDate
+          }
+          return false
+        })
+      } else {
+        // Default to June 2025 since that's where our data is
+        console.log('Using default June 2025 filter')
+        filteredData = locationData.filter(item => {
+          if (item.date) {
+            const itemDate = new Date(item.date)
+            // Check for June 2025 (month 5, 0-indexed)
+            const isJune2025 = itemDate.getMonth() === 5 && itemDate.getFullYear() === 2025
+            console.log('Date check:', item.date, '-> month:', itemDate.getMonth(), 'year:', itemDate.getFullYear(), 'isJune2025:', isJune2025)
+            return isJune2025
+          }
+          return false
+        })
+      }
+      
+      console.log('Final filtered data:', filteredData) // Debug log
+      
+      return filteredData.sort((a, b) => {
+        if (a.date && b.date) {
+          return new Date(a.date).getTime() - new Date(b.date).getTime()
+        }
+        return 0
+      })
+    }
+    
     if (type === "location-total") {
       const locationTotals: { [key: string]: number } = {}
       
@@ -99,6 +205,20 @@ export function RainfallBarChart({
   const aggregatedData = getAggregatedData()
   
   const getLabels = () => {
+    // If showing daily data for a specific location
+    if (type === "monthly-location-total" && selectedLocation && selectedLocation !== "all") {
+      return aggregatedData.map((item: any) => {
+        if (item.date) {
+          const date = new Date(item.date)
+          return date.toLocaleDateString("id-ID", { 
+            day: "2-digit", 
+            month: "short" 
+          })
+        }
+        return ""
+      })
+    }
+    
     if (type === "location-total" || type === "monthly-location-total") {
       return aggregatedData.map((item: any) => item.location || "Unknown")
     }
@@ -125,6 +245,13 @@ export function RainfallBarChart({
           ""
         return `Total Curah Hujan per Lokasi${period}`
       case "monthly-location-total":
+        // If specific location is selected, show daily data for that location
+        if (selectedLocation && selectedLocation !== "all") {
+          const targetMonth = dateRange?.start ? 
+            new Date(dateRange.start).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) :
+            new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+          return `Curah Hujan Harian - ${selectedLocation} (${targetMonth})`
+        }
         const targetMonth = dateRange?.start ? 
           new Date(dateRange.start).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) :
           new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
@@ -140,6 +267,12 @@ export function RainfallBarChart({
     switch (type) {
       case "location-total":
         return "Lokasi"
+      case "monthly-location-total":
+        // If specific location is selected, show date labels
+        if (selectedLocation && selectedLocation !== "all") {
+          return "Tanggal"
+        }
+        return "Lokasi"
       case "monthly":
         return "Bulan"
       default:
@@ -150,6 +283,12 @@ export function RainfallBarChart({
   const getYAxisLabel = () => {
     switch (type) {
       case "location-total":
+        return "Lokasi"
+      case "monthly-location-total":
+        // If specific location is selected, show date labels for horizontal orientation
+        if (selectedLocation && selectedLocation !== "all") {
+          return "Tanggal"
+        }
         return "Lokasi"
       case "monthly":
         return "Bulan"
@@ -170,7 +309,7 @@ export function RainfallBarChart({
   ]
 
   // Add comparison data if provided (not applicable for location-total type)
-  if (showComparison && comparisonData && type !== "location-total") {
+  if (showComparison && comparisonData && type !== "location-total" && type !== "monthly-location-total") {
     datasets.push({
       label: comparisonData[0]?.label || "Perbandingan",
       data: comparisonData.map((item) => item.value),
@@ -186,6 +325,23 @@ export function RainfallBarChart({
     datasets
   }
 
+  // If no data available, show a message
+  if (aggregatedData.length === 0) {
+    return (
+      <div className="h-80 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-500 text-sm">Tidak ada data tersedia untuk lokasi dan periode yang dipilih</p>
+          <p className="text-gray-400 text-xs mt-1">
+            {selectedLocation && selectedLocation !== "all" 
+              ? `Lokasi: ${selectedLocation}` 
+              : "Pilih lokasi atau ubah filter tanggal"
+            }
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   const options = {
     responsive: true,
     maintainAspectRatio: false,
@@ -198,7 +354,7 @@ export function RainfallBarChart({
         callbacks: {
           label: function(context: any) {
             const value = context.parsed.y || context.parsed.x
-            if (type === "location-total") {
+            if (type === "location-total" || type === "monthly-location-total") {
               return `${context.dataset.label}: ${value.toFixed(2)} mm`
             }
             return `${context.dataset.label}: ${value} mm`
@@ -231,7 +387,26 @@ export function RainfallBarChart({
 
   return (
     <div className="h-80">
-      <Bar data={chartData} options={options} />
+      {aggregatedData.length === 0 ? (
+        <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="text-center">
+            <p className="text-lg font-medium">Tidak ada data tersedia</p>
+            <p className="text-sm">
+              {type === "monthly-location-total" && selectedLocation && selectedLocation !== "all" 
+                ? `untuk lokasi ${selectedLocation} dan periode yang dipilih`
+                : "untuk periode yang dipilih"
+              }
+            </p>
+            <p className="text-xs mt-2">
+              Lokasi: {selectedLocation || "Semua"} | 
+              Data items: {data.length} | 
+              Type: {type}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <Bar data={chartData} options={options} />
+      )}
     </div>
   )
 }

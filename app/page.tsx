@@ -158,15 +158,26 @@ export default function Dashboard() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Total Curah Hujan per Lokasi</CardTitle>
-                  <CardDescription>Perbandingan total curah hujan antar lokasi</CardDescription>
+                  <CardTitle>
+                    {currentFilters.location !== "all" ? 
+                      `Curah Hujan Harian - ${currentFilters.location}` : 
+                      "Total Curah Hujan per Lokasi (Bulanan)"
+                    }
+                  </CardTitle>
+                  <CardDescription>
+                    {currentFilters.location !== "all" ? 
+                      "Data curah hujan harian untuk lokasi terpilih dalam 1 bulan" :
+                      "Perbandingan total curah hujan antar lokasi dalam 1 bulan"
+                    }
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <RainfallBarChart 
-                    data={filteredData} 
-                    type="location-total"
+                    data={dailyData} 
+                    type="monthly-location-total"
                     orientation="vertical"
                     showComparison={false}
+                    selectedLocation={currentFilters.location}
                     dateRange={currentFilters.dateRange ? {
                       start: currentFilters.dateRange.from.toISOString().split('T')[0],
                       end: currentFilters.dateRange.to.toISOString().split('T')[0]
