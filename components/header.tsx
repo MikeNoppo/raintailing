@@ -1,15 +1,18 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { CloudRain, BarChart3, Settings, Menu } from "lucide-react"
+import { CloudRain, BarChart3, Settings, Menu, LogOut } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 interface HeaderProps {
   activeTab: string
   setActiveTab: (tab: string) => void
+  onAdminAccess?: () => void
+  isAuthenticated?: boolean
+  onLogout?: () => void
 }
 
-export function Header({ activeTab, setActiveTab }: HeaderProps) {
+export function Header({ activeTab, setActiveTab, onAdminAccess, isAuthenticated, onLogout }: HeaderProps) {
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: BarChart3 },
     { id: "data", label: "Data", icon: CloudRain },
@@ -34,7 +37,13 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
                 <Button
                   key={item.id}
                   variant={activeTab === item.id ? "default" : "ghost"}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                    if (item.id === "admin" && onAdminAccess) {
+                      onAdminAccess()
+                    } else {
+                      setActiveTab(item.id)
+                    }
+                  }}
                   className="flex items-center space-x-2"
                 >
                   <Icon className="h-4 w-4" />
@@ -42,6 +51,18 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
                 </Button>
               )
             })}
+            
+            {/* Logout Button - hanya tampil jika user sudah login */}
+            {isAuthenticated && (
+              <Button
+                variant="ghost"
+                onClick={onLogout}
+                className="flex items-center space-x-2 text-red-600 hover:text-red-700"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Logout</span>
+              </Button>
+            )}
           </nav>
 
           {/* Mobile Navigation */}
@@ -59,7 +80,13 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
                     <Button
                       key={item.id}
                       variant={activeTab === item.id ? "default" : "ghost"}
-                      onClick={() => setActiveTab(item.id)}
+                      onClick={() => {
+                        if (item.id === "admin" && onAdminAccess) {
+                          onAdminAccess()
+                        } else {
+                          setActiveTab(item.id)
+                        }
+                      }}
                       className="flex items-center space-x-2 justify-start"
                     >
                       <Icon className="h-4 w-4" />
@@ -67,6 +94,18 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
                     </Button>
                   )
                 })}
+                
+                {/* Logout Button untuk mobile - hanya tampil jika user sudah login */}
+                {isAuthenticated && (
+                  <Button
+                    variant="ghost"
+                    onClick={onLogout}
+                    className="flex items-center space-x-2 justify-start text-red-600 hover:text-red-700"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </Button>
+                )}
               </div>
             </SheetContent>
           </Sheet>

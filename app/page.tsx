@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CloudRain, Droplets, TrendingUp, AlertTriangle } from "lucide-react"
@@ -10,6 +11,7 @@ import { DataTable } from "@/components/data-table"
 import { FilterControls } from "@/components/filter-controls"
 import { AdminPanel } from "@/components/admin-panel"
 import { Header } from "@/components/header"
+import { toast } from "sonner"
 
 // Sample data
 const dailyData = [
@@ -34,6 +36,36 @@ const monthlyData = [
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("dashboard")
   const [filteredData, setFilteredData] = useState(dailyData)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    // Check authentication status
+    const authStatus = localStorage.getItem("isAuthenticated") === "true"
+    setIsAuthenticated(authStatus)
+    
+    // Check if redirected from login with admin tab
+    const tab = searchParams.get("tab")
+    if (tab === "admin" && authStatus) {
+      setActiveTab("admin")
+    }
+  }, [searchParams])
+
+  const handleAdminAccess = () => {
+    if (!isAuthenticated) {
+      router.push("/login?return=admin")
+    } else {
+      setActiveTab("admin")
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem("isAuthenticated")
+    setIsAuthenticated(false)
+    setActiveTab("dashboard")
+    toast.success("Logout berhasil!")
+  }
 
   const currentRainfall = dailyData[dailyData.length - 1]?.rainfall || 0
   const avgRainfall = dailyData.reduce((sum, item) => sum + item.rainfall, 0) / dailyData.length
@@ -64,7 +96,13 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Header 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab}
+        onAdminAccess={handleAdminAccess}
+        isAuthenticated={isAuthenticated}
+        onLogout={handleLogout}
+      />
 
       <main className="container mx-auto px-4 py-6">
         {activeTab === "dashboard" && (
