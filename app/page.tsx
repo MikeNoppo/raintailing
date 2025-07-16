@@ -14,26 +14,9 @@ import { LocationManagement } from "@/components/location-management"
 import { Header } from "@/components/header"
 import { toast } from "sonner"
 import { AreaChart } from "@/components/area-chart"
-
-// Sample data
-const dailyData = [
-  { date: "2024-01-15", rainfall: 12.5, location: "GSW-PIT", level: "normal" },
-  { date: "2024-01-16", rainfall: 25.3, location: "GSW-DP3", level: "warning" },
-  { date: "2024-01-17", rainfall: 45.8, location: "TSF", level: "danger" },
-  { date: "2024-01-18", rainfall: 8.2, location: "KNC-PRT", level: "normal" },
-  { date: "2024-01-19", rainfall: 18.7, location: "TGR-PRT", level: "normal" },
-  { date: "2024-01-20", rainfall: 32.1, location: "GSW-NTH", level: "warning" },
-  { date: "2024-01-21", rainfall: 6.4, location: "GSW-PIT", level: "normal" },
-]
-
-const monthlyData = [
-  { month: "Jan", rainfall: 145.2, average: 120.5 },
-  { month: "Feb", rainfall: 98.7, average: 110.2 },
-  { month: "Mar", rainfall: 167.3, average: 135.8 },
-  { month: "Apr", rainfall: 203.1, average: 180.4 },
-  { month: "May", rainfall: 89.5, average: 95.2 },
-  { month: "Jun", rainfall: 234.8, average: 200.1 },
-]
+import { RainfallClassificationChart, RainfallClassificationSummary } from "@/components/rainfall-classification-chart"
+import { RainfallAnalyticsDashboard } from "@/components/rainfall-analytics-dashboard"
+import { dailyData, monthlyData } from "@/lib/data/rainfall-data"
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("dashboard")
@@ -75,13 +58,12 @@ export default function Dashboard() {
 
   const currentRainfall = dailyData[dailyData.length - 1]?.rainfall || 0
   const avgRainfall = dailyData.reduce((sum, item) => sum + item.rainfall, 0) / dailyData.length
-  const totalStations = 3
-  const alertCount = dailyData.filter((item) => item.level === "danger").length
+  const totalStations = 6
 
-  const getRainfallLevel = (rainfall: number) => {
-    if (rainfall < 10) return { level: "normal", color: "bg-green-500", text: "Normal" }
-    if (rainfall < 30) return { level: "warning", color: "bg-yellow-500", text: "Peringatan" }
-    return { level: "danger", color: "bg-red-500", text: "Bahaya" }
+  const getRainfallStatus = (rainfall: number) => {
+    if (rainfall < 10) return { color: "bg-green-500", text: "Normal" }
+    if (rainfall < 30) return { color: "bg-yellow-500", text: "Sedang" }
+    return { color: "bg-red-500", text: "Tinggi" }
   }
 
   const handleFilterChange = (filters: any) => {
@@ -120,7 +102,7 @@ export default function Dashboard() {
         {activeTab === "dashboard" && (
           <div className="space-y-6">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Curah Hujan Hari Ini</CardTitle>
@@ -129,8 +111,8 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="text-2xl font-bold">{currentRainfall} mm</div>
                   <div className="flex items-center mt-2">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${getRainfallLevel(currentRainfall).color}`} />
-                    <p className="text-xs text-muted-foreground">{getRainfallLevel(currentRainfall).text}</p>
+                    <div className={`w-2 h-2 rounded-full mr-2 ${getRainfallStatus(currentRainfall).color}`} />
+                    <p className="text-xs text-muted-foreground">{getRainfallStatus(currentRainfall).text}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -154,17 +136,6 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="text-2xl font-bold">{totalStations}</div>
                   <p className="text-xs text-muted-foreground">Semua stasiun online</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Peringatan</CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{alertCount}</div>
-                  <p className="text-xs text-muted-foreground">Alert level tinggi</p>
                 </CardContent>
               </Card>
             </div>
@@ -194,10 +165,57 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Rainfall Classification Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <RainfallClassificationChart 
+                location={currentFilters.location !== "all" ? currentFilters.location : undefined}
+                dateRange={currentFilters.dateRange ? {
+                  start: currentFilters.dateRange.from.toISOString().split('T')[0],
+                  end: currentFilters.dateRange.to.toISOString().split('T')[0]
+                } : undefined}
+                showAsDonut={true}
+                title="Klasifikasi Curah Hujan"
+                description="Proporsi kategori curah hujan (Pie Chart)"
+              />
+              
+              <RainfallClassificationSummary 
+                location={currentFilters.location !== "all" ? currentFilters.location : undefined}
+                dateRange={currentFilters.dateRange ? {
+                  start: currentFilters.dateRange.from.toISOString().split('T')[0],
+                  end: currentFilters.dateRange.to.toISOString().split('T')[0]
+                } : undefined}
+              />
+            </div>
+
             <AreaChart 
               data={filteredData} 
               filteredLocation={currentFilters.location}
               dateRange={currentFilters.dateRange}
+            />
+          </div>
+        )}
+
+        {activeTab === "classification" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold">Klasifikasi Curah Hujan</h2>
+                <p className="text-muted-foreground">
+                  Analisis proporsi kategori curah hujan berdasarkan standar meteorologi Indonesia
+                </p>
+              </div>
+            </div>
+            
+            <FilterControls onFilterChange={handleFilterChange} />
+            
+            <RainfallAnalyticsDashboard 
+              data={dailyData}
+              selectedLocation={currentFilters.location !== "all" ? currentFilters.location : undefined}
+              dateRange={currentFilters.dateRange ? {
+                start: currentFilters.dateRange.from.toISOString().split('T')[0],
+                end: currentFilters.dateRange.to.toISOString().split('T')[0]
+              } : undefined}
             />
           </div>
         )}

@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { CloudRain, BarChart3, Settings, Menu, LogOut, MapPin } from "lucide-react"
+import { CloudRain, BarChart3, Settings, Menu, LogOut, MapPin, PieChart } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 interface HeaderProps {
@@ -15,6 +15,7 @@ interface HeaderProps {
 export function Header({ activeTab, setActiveTab, onAdminAccess, isAuthenticated, onLogout }: HeaderProps) {
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: BarChart3 },
+    { id: "classification", label: "Klasifikasi", icon: PieChart },
     { id: "data", label: "Data", icon: CloudRain },
     { id: "locations", label: "Lokasi", icon: MapPin },
     { id: "admin", label: "Admin", icon: Settings },

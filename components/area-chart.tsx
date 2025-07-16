@@ -83,7 +83,6 @@ interface RainfallAreaChartProps {
     date: string
     rainfall: number
     location: string
-    level: string
   }>
   filteredLocation?: string
   dateRange?: { from: Date; to: Date }
@@ -124,30 +123,49 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
     return () => window.removeEventListener('locationsUpdated', handleLocationUpdate)
   }, [])
 
-  // Generate chart data based on current locations
+  // Convert propData to chart format or generate data
   const chartDataWithLocations = React.useMemo(() => {
-    const data = []
-    const startDate = new Date("2024-04-01")
+    if (propData && propData.length > 0) {
+      // Convert the prop data to chart format
+      const dataMap = new Map()
+      
+      // Group data by date
+      propData.forEach(item => {
+        if (!dataMap.has(item.date)) {
+          dataMap.set(item.date, { date: item.date })
+        }
+        dataMap.get(item.date)[item.location] = item.rainfall
+      })
+      
+      // Convert map to array and sort by date
+      return Array.from(dataMap.values()).sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      )
+    } else {
+      // Fallback to generated data if no propData
+      const data = []
+      const startDate = new Date("2024-04-01")
 
-    for (let i = 0; i < 90; i++) {
-      const date = new Date(startDate)
-      date.setDate(date.getDate() + i)
+      for (let i = 0; i < 90; i++) {
+        const date = new Date(startDate)
+        date.setDate(date.getDate() + i)
 
-      const dataPoint: any = {
-        date: date.toISOString().split("T")[0],
+        const dataPoint: any = {
+          date: date.toISOString().split("T")[0],
+        }
+
+        // Generate data for each active location
+        locations.forEach((location, index) => {
+          const baseRainfall = Math.max(0, Math.random() * 50 + Math.sin(i * (0.1 + index * 0.02)) * 20)
+          dataPoint[location.code] = Math.round(baseRainfall * 10) / 10
+        })
+
+        data.push(dataPoint)
       }
 
-      // Generate data for each active location
-      locations.forEach((location, index) => {
-        const baseRainfall = Math.max(0, Math.random() * 50 + Math.sin(i * (0.1 + index * 0.02)) * 20)
-        dataPoint[location.code] = Math.round(baseRainfall * 10) / 10
-      })
-
-      data.push(dataPoint)
+      return data
     }
-
-    return data
-  }, [locations])
+  }, [locations, propData])
 
   // Filter locations based on filter controls
   const displayedLocations = React.useMemo(() => {
@@ -157,8 +175,9 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
     return locations.filter(location => location.code === filteredLocation)
   }, [locations, filteredLocation])
 
+  // Fill missing data and filter chart data
   const filteredData = React.useMemo(() => {
-    return chartDataWithLocations.filter((item) => {
+    const filtered = chartDataWithLocations.filter((item) => {
       const date = new Date(item.date)
       
       // Apply date range filter from filter controls if provided
@@ -166,13 +185,29 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
         return date >= dateRange.from && date <= dateRange.to
       }
       
-      // If no date filter, show last 90 days by default
+      // If using propData, don't apply default date filter
+      if (propData && propData.length > 0) {
+        return true
+      }
+      
+      // If no date filter and using generated data, show last 90 days by default
       const referenceDate = new Date("2024-06-30") // Use a fixed reference date
       const startDate = new Date(referenceDate)
       startDate.setDate(startDate.getDate() - 90)
       return date >= startDate
     })
-  }, [chartDataWithLocations, dateRange])
+
+    // Ensure all displayed locations have data (fill with 0 if missing)
+    return filtered.map(item => {
+      const filledItem = { ...item }
+      displayedLocations.forEach(location => {
+        if (filledItem[location.code] === undefined) {
+          filledItem[location.code] = 0
+        }
+      })
+      return filledItem
+    })
+  }, [chartDataWithLocations, dateRange, propData, displayedLocations])
 
   // Generate dynamic chart config based on displayed locations
   const dynamicChartConfig = React.useMemo(() => {
@@ -194,7 +229,7 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
           <CardDescription>
             {filteredLocation !== "all" 
               ? `Data curah hujan untuk ${displayedLocations[0]?.name || filteredLocation}`
-              : "Perbandingan curah hujan antar stasiun dalam periode waktu"
+              : `Perbandingan curah hujan antar ${displayedLocations.length} stasiun ${propData && propData.length > 0 ? 'berdasarkan data real' : 'dalam periode waktu'}`
             }
           </CardDescription>
         </div>

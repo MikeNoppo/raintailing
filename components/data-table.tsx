@@ -1,6 +1,5 @@
 "use client"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -11,35 +10,13 @@ interface DataTableProps {
     date: string
     rainfall: number
     location: string
-    level: string
   }>
 }
 
 export function DataTable({ data }: DataTableProps) {
-  const getLevelBadge = (level: string) => {
-    switch (level) {
-      case "normal":
-        return (
-          <Badge variant="secondary" className="bg-green-100 text-green-800">
-            Normal
-          </Badge>
-        )
-      case "warning":
-        return (
-          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-            Peringatan
-          </Badge>
-        )
-      case "danger":
-        return <Badge variant="destructive">Bahaya</Badge>
-      default:
-        return <Badge variant="secondary">Unknown</Badge>
-    }
-  }
-
   const exportToExcel = () => {
     // Create CSV content
-    const headers = ["Tanggal", "Curah Hujan (mm)", "Lokasi", "Status"]
+    const headers = ["Tanggal", "Curah Hujan (mm)", "Lokasi"]
     const csvContent = [
       headers.join(","),
       ...data.map((row) =>
@@ -47,7 +24,6 @@ export function DataTable({ data }: DataTableProps) {
           row.date,
           row.rainfall,
           row.location,
-          row.level === "normal" ? "Normal" : row.level === "warning" ? "Peringatan" : "Bahaya",
         ].join(","),
       ),
     ].join("\n")
@@ -83,7 +59,6 @@ export function DataTable({ data }: DataTableProps) {
                 <TableHead>Tanggal</TableHead>
                 <TableHead>Curah Hujan (mm)</TableHead>
                 <TableHead>Lokasi</TableHead>
-                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -98,7 +73,6 @@ export function DataTable({ data }: DataTableProps) {
                   </TableCell>
                   <TableCell className="font-medium">{row.rainfall}</TableCell>
                   <TableCell>{row.location}</TableCell>
-                  <TableCell>{getLevelBadge(row.level)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

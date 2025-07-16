@@ -1,15 +1,194 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../lib/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// User management for authentication
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String   // Should be hashed in production
+  role      UserRole @default(ADMIN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  rainfallData RainfallData[]
+  uploads      FileUpload[]
+  sessions     UserSession[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  OPERATOR
+  VIEWER
+}
+
+// Location/Station management
+model Location {
+  id          String         @id @default(cuid())
+  name        String         // e.g., "Gosowong Pit"
+  code        String         @unique // e.g., "GSW-PIT"
+  description String?        // Optional description
+  latitude    Float?         // GPS coordinates
+  longitude   Float?         // GPS coordinates
+  status      LocationStatus @default(ACTIVE)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  rainfallData      RainfallData[]
+  monthlyAggregates MonthlyAggregate[]
+  thresholds        RainfallThreshold[]
+
+  @@map("locations")
+}
+
+enum LocationStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+// Main rainfall data
+model RainfallData {
+  id        String   @id @default(cuid())
+  date      DateTime // Date of measurement
+  rainfall  Float    // Rainfall amount in mm
+  notes     String?  // Optional notes
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Foreign keys
+  locationId String
+  userId     String? // User who entered the data
+
+  // Relations
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([date, locationId]) // Prevent duplicate entries for same date and location
+  @@map("rainfall_data")
+}
+
+// File upload tracking for Excel imports
+model FileUpload {
+  id           String           @id @default(cuid())
+  filename     String
+  originalName String
+  fileSize     Int
+  mimeType     String
+  status       FileUploadStatus @default(PENDING)
+  recordsCount Int?             // Number of records processed
+  errorCount   Int?             // Number of errors during processing
+  errorLog     String?          // Error details if any
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  // Foreign keys
+  userId String
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("file_uploads")
+}
+
+enum FileUploadStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// System configurations and settings
+model SystemConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  type  String @default("string") // string, number, boolean, json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_configs")
+}
+
+// Audit log for tracking system activities
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String   // CREATE, UPDATE, DELETE, LOGIN, etc.
+  entity    String   // Table/entity name
+  entityId  String?  // ID of the affected record
+  oldValues String?  // JSON string of old values
+  newValues String?  // JSON string of new values
+  userId    String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+// Monthly aggregated data for performance
+model MonthlyAggregate {
+  id              String   @id @default(cuid())
+  year            Int
+  month           Int      // 1-12
+  locationId      String
+  totalRainfall   Float
+  averageRainfall Float
+  maxRainfall     Float
+  minRainfall     Float
+  recordCount     Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([year, month, locationId])
+  @@map("monthly_aggregates")
+}
+
+// Rainfall thresholds and alerts (for future use)
+model RainfallThreshold {
+  id          String   @id @default(cuid())
+  locationId  String?  // If null, applies to all locations
+  name        String   // e.g., "Warning Level", "Danger Level"
+  minValue    Float?   // Minimum rainfall threshold
+  maxValue    Float?   // Maximum rainfall threshold
+  alertType   String   // WARNING, DANGER, INFO
+  isActive    Boolean  @default(true)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  location Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@map("rainfall_thresholds")
+}
+
+// User sessions for better security
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
 }

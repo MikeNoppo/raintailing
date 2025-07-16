@@ -20,7 +20,6 @@ interface RainfallChartProps {
     date: string
     rainfall: number
     location: string
-    level: string
   }>
 }
 
@@ -39,16 +38,8 @@ export function RainfallChart({ data }: RainfallChartProps) {
         borderWidth: 2,
         fill: true,
         tension: 0.4,
-        pointBackgroundColor: data.map((item) => {
-          if (item.level === "danger") return "rgb(239, 68, 68)"
-          if (item.level === "warning") return "rgb(245, 158, 11)"
-          return "rgb(34, 197, 94)"
-        }),
-        pointBorderColor: data.map((item) => {
-          if (item.level === "danger") return "rgb(239, 68, 68)"
-          if (item.level === "warning") return "rgb(245, 158, 11)"
-          return "rgb(34, 197, 94)"
-        }),
+        pointBackgroundColor: data.map(() => "rgb(59, 130, 246)"),
+        pointBorderColor: data.map(() => "rgb(59, 130, 246)"),
         pointRadius: 6,
         pointHoverRadius: 8,
       },
@@ -66,9 +57,8 @@ export function RainfallChart({ data }: RainfallChartProps) {
         callbacks: {
           afterLabel: (context: any) => {
             const dataIndex = context.dataIndex
-            const level = data[dataIndex].level
-            const levelText = level === "danger" ? "Bahaya" : level === "warning" ? "Peringatan" : "Normal"
-            return `Status: ${levelText}`
+            const rainfall = data[dataIndex].rainfall
+            return `Lokasi: ${data[dataIndex].location}`
           },
         },
       },
