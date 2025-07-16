@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -18,7 +18,7 @@ import { RainfallClassificationChart, RainfallClassificationSummary } from "@/co
 import { RainfallAnalyticsDashboard } from "@/components/rainfall-analytics-dashboard"
 import { dailyData } from "@/lib/data/rainfall-data"
 
-export default function Dashboard() {
+function DashboardContent() {
   const [activeTab, setActiveTab] = useState("dashboard")
   const [filteredData, setFilteredData] = useState(dailyData)
   const [currentFilters, setCurrentFilters] = useState<{
@@ -268,5 +268,13 @@ export default function Dashboard() {
         )}
       </main>
     </div>
+  )
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   )
 }
