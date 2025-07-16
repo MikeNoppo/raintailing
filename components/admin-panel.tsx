@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -17,11 +17,27 @@ import { id } from "date-fns/locale"
 import { toast } from "sonner"
 
 export function AdminPanel() {
-  const [date, setDate] = useState<Date>()
+  const [date, setDate] = useState<Date | undefined>(new Date())
   const [rainfall, setRainfall] = useState("")
   const [location, setLocation] = useState("")
   const [notes, setNotes] = useState("")
   const [dragActive, setDragActive] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [locations, setLocations] = useState<any[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Load locations from localStorage
+  useEffect(() => {
+    const savedLocations = localStorage.getItem('rainfall-locations')
+    if (savedLocations) {
+      try {
+        const parsed = JSON.parse(savedLocations)
+        setLocations(parsed.filter((loc: any) => loc.status === 'active'))
+      } catch (error) {
+        console.error('Error loading locations:', error)
+      }
+    }
+  }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,7 +51,7 @@ export function AdminPanel() {
     toast.success("Data curah hujan berhasil ditambahkan")
 
     // Reset form
-    setDate(undefined)
+    setDate(new Date())
     setRainfall("")
     setLocation("")
     setNotes("")
@@ -63,15 +79,29 @@ export function AdminPanel() {
 
   const handleFiles = (files: FileList) => {
     const file = files[0]
-    if (
-      file &&
-      (file.type === "application/vnd.ms-excel" ||
-        file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    ) {
-      toast.success(`File ${file.name} siap diproses`)
-      // Here you would process the Excel file
-    } else {
-      toast.error("Mohon upload file Excel (.xls atau .xlsx)")
+    if (file) {
+      if (
+        file.type === "application/vnd.ms-excel" ||
+        file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+        file.name.endsWith('.xlsx') ||
+        file.name.endsWith('.xls')
+      ) {
+        setSelectedFile(file)
+        toast.success(`File ${file.name} berhasil dipilih dan siap diproses`)
+        // Here you would process the Excel file
+        console.log('File selected:', file)
+      } else {
+        toast.error("Mohon upload file Excel (.xls atau .xlsx)")
+        setSelectedFile(null)
+      }
+    }
+  }
+
+  const handleProcessFile = () => {
+    if (selectedFile) {
+      toast.success(`Memproses file ${selectedFile.name}...`)
+      // Here you would implement the actual file processing logic
+      console.log('Processing file:', selectedFile)
     }
   }
 
@@ -99,6 +129,16 @@ export function AdminPanel() {
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
+                  <div className="p-3 border-t">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setDate(new Date())}
+                      className="w-full"
+                    >
+                      Hari Ini
+                    </Button>
+                  </div>
                 </PopoverContent>
               </Popover>
             </div>
@@ -122,9 +162,17 @@ export function AdminPanel() {
                   <SelectValue placeholder="Pilih lokasi stasiun" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Station A">Stasiun A</SelectItem>
-                  <SelectItem value="Station B">Stasiun B</SelectItem>
-                  <SelectItem value="Station C">Stasiun C</SelectItem>
+                  {locations.length > 0 ? (
+                    locations.map((loc) => (
+                      <SelectItem key={loc.id} value={loc.code}>
+                        {loc.name} ({loc.code})
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem key="no-locations" value="no-locations" disabled>
+                      Tidak ada lokasi aktif. Tambahkan di menu Manajemen Lokasi.
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -172,32 +220,39 @@ export function AdminPanel() {
               <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <p className="text-lg font-medium text-gray-900 mb-2">Drag & drop file Excel di sini</p>
               <p className="text-sm text-gray-500 mb-4">atau klik tombol di bawah untuk memilih file</p>
+              
               <input
                 type="file"
                 accept=".xlsx,.xls"
                 onChange={(e) => e.target.files && handleFiles(e.target.files)}
                 className="hidden"
-                id="file-upload"
+                ref={fileInputRef}
               />
-              <label htmlFor="file-upload">
-                <Button variant="outline" className="cursor-pointer bg-transparent">
-                  Pilih File Excel
-                </Button>
-              </label>
+              
+              <Button 
+                variant="outline" 
+                className="cursor-pointer bg-transparent"
+                onClick={() => fileInputRef.current?.click()}
+                type="button"
+              >
+                Pilih File Excel
+              </Button>
             </div>
 
-            {/* File Format Info */}
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">Format File Excel:</h4>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Kolom A: Tanggal (DD/MM/YYYY)</li>
-                <li>• Kolom B: Curah Hujan (mm)</li>
-                <li>• Kolom C: Lokasi Stasiun</li>
-                <li>• Kolom D: Catatan (opsional)</li>
-              </ul>
-            </div>
+            {/* Show selected file */}
+            {selectedFile && (
+              <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                <p className="text-sm text-green-800">
+                  <strong>File dipilih:</strong> {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                </p>
+              </div>
+            )}
 
-            <Button className="w-full" disabled>
+            <Button 
+              className="w-full" 
+              disabled={!selectedFile}
+              onClick={handleProcessFile}
+            >
               <Upload className="mr-2 h-4 w-4" />
               Proses File Excel
             </Button>

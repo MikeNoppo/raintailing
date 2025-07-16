@@ -10,8 +10,10 @@ import { MonthlyChart } from "@/components/monthly-chart"
 import { DataTable } from "@/components/data-table"
 import { FilterControls } from "@/components/filter-controls"
 import { AdminPanel } from "@/components/admin-panel"
+import { LocationManagement } from "@/components/location-management"
 import { Header } from "@/components/header"
 import { toast } from "sonner"
+import { AreaChart } from "@/components/area-chart"
 
 // Sample data
 const dailyData = [
@@ -182,6 +184,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             </div>
+            <AreaChart data={filteredData} />
           </div>
         )}
 
@@ -193,6 +196,12 @@ export default function Dashboard() {
             </div>
             <FilterControls onFilterChange={handleFilterChange} />
             <DataTable data={filteredData} />
+          </div>
+        )}
+
+        {activeTab === "locations" && (
+          <div className="space-y-6">
+            <LocationManagement />
           </div>
         )}
 
