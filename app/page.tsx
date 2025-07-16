@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { CloudRain, Droplets, TrendingUp, AlertTriangle } from "lucide-react"
 import { RainfallChart } from "@/components/rainfall-chart"
 import { MonthlyChart } from "@/components/monthly-chart"
+import { RainfallBarChart } from "@/components/rainfall-bar-chart"
 import { DataTable } from "@/components/data-table"
 import { FilterControls } from "@/components/filter-controls"
 import { AdminPanel } from "@/components/admin-panel"
@@ -157,11 +158,20 @@ export default function Dashboard() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Data Curah Hujan Bulanan</CardTitle>
-                  <CardDescription>Perbandingan dengan rata-rata historis</CardDescription>
+                  <CardTitle>Total Curah Hujan per Lokasi</CardTitle>
+                  <CardDescription>Perbandingan total curah hujan antar lokasi</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <MonthlyChart data={monthlyData} />
+                  <RainfallBarChart 
+                    data={filteredData} 
+                    type="location-total"
+                    orientation="vertical"
+                    showComparison={false}
+                    dateRange={currentFilters.dateRange ? {
+                      start: currentFilters.dateRange.from.toISOString().split('T')[0],
+                      end: currentFilters.dateRange.to.toISOString().split('T')[0]
+                    } : undefined}
+                  />
                 </CardContent>
               </Card>
             </div>
