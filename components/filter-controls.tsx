@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -19,6 +19,46 @@ interface FilterControlsProps {
 export function FilterControls({ onFilterChange }: FilterControlsProps) {
   const [location, setLocation] = useState("all")
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const [locations, setLocations] = useState<any[]>([])
+
+  // Load locations from localStorage
+  useEffect(() => {
+    const loadLocations = () => {
+      const savedLocations = localStorage.getItem('rainfall-locations')
+      if (savedLocations) {
+        try {
+          const parsed = JSON.parse(savedLocations)
+          setLocations(parsed.filter((loc: any) => loc.status === 'active'))
+        } catch (error) {
+          console.error('Error loading locations:', error)
+        }
+      }
+    }
+
+    // Load initially
+    loadLocations()
+
+    // Listen for storage changes (when locations are updated in another component)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'rainfall-locations') {
+        loadLocations()
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    
+    // Also listen for custom events within the same window
+    const handleLocationUpdate = () => {
+      loadLocations()
+    }
+    
+    window.addEventListener('locationsUpdated', handleLocationUpdate)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('locationsUpdated', handleLocationUpdate)
+    }
+  }, [])
 
   const handleLocationChange = (value: string) => {
     setLocation(value)
@@ -79,15 +119,17 @@ export function FilterControls({ onFilterChange }: FilterControlsProps) {
                   <SelectItem value="all" className="hover:bg-gray-50">
                     Semua Lokasi
                   </SelectItem>
-                  <SelectItem value="Station A" className="hover:bg-gray-50">
-                    Stasiun A
-                  </SelectItem>
-                  <SelectItem value="Station B" className="hover:bg-gray-50">
-                    Stasiun B
-                  </SelectItem>
-                  <SelectItem value="Station C" className="hover:bg-gray-50">
-                    Stasiun C
-                  </SelectItem>
+                  {locations.length > 0 ? (
+                    locations.map((loc) => (
+                      <SelectItem key={loc.id} value={loc.code} className="hover:bg-gray-50">
+                        {loc.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem key="no-locations" value="no-locations" disabled className="hover:bg-gray-50">
+                      Tidak ada lokasi aktif. Tambahkan di menu Manajemen Lokasi.
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -240,7 +282,7 @@ export function FilterControls({ onFilterChange }: FilterControlsProps) {
               <span className="text-xs font-medium text-gray-600">Filter aktif:</span>
               {location !== "all" && (
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                  {location === "Station A" ? "Stasiun A" : location === "Station B" ? "Stasiun B" : "Stasiun C"}
+                  {locations.find(loc => loc.code === location)?.name || location}
                   <button
                     onClick={() => handleLocationChange("all")}
                     className="ml-1 hover:bg-blue-200 rounded-full p-0.5"

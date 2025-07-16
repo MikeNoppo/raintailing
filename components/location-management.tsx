@@ -122,6 +122,8 @@ export function LocationManagement() {
   // Save locations to localStorage whenever locations change
   useEffect(() => {
     localStorage.setItem('rainfall-locations', JSON.stringify(locations))
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('locationsUpdated'))
   }, [locations])
 
   const resetForm = () => {

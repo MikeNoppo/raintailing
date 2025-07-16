@@ -17,13 +17,13 @@ import { AreaChart } from "@/components/area-chart"
 
 // Sample data
 const dailyData = [
-  { date: "2024-01-15", rainfall: 12.5, location: "Station A", level: "normal" },
-  { date: "2024-01-16", rainfall: 25.3, location: "Station A", level: "warning" },
-  { date: "2024-01-17", rainfall: 45.8, location: "Station A", level: "danger" },
-  { date: "2024-01-18", rainfall: 8.2, location: "Station A", level: "normal" },
-  { date: "2024-01-19", rainfall: 18.7, location: "Station A", level: "normal" },
-  { date: "2024-01-20", rainfall: 32.1, location: "Station A", level: "warning" },
-  { date: "2024-01-21", rainfall: 6.4, location: "Station A", level: "normal" },
+  { date: "2024-01-15", rainfall: 12.5, location: "GSW-PIT", level: "normal" },
+  { date: "2024-01-16", rainfall: 25.3, location: "GSW-DP3", level: "warning" },
+  { date: "2024-01-17", rainfall: 45.8, location: "TSF", level: "danger" },
+  { date: "2024-01-18", rainfall: 8.2, location: "KNC-PRT", level: "normal" },
+  { date: "2024-01-19", rainfall: 18.7, location: "TGR-PRT", level: "normal" },
+  { date: "2024-01-20", rainfall: 32.1, location: "GSW-NTH", level: "warning" },
+  { date: "2024-01-21", rainfall: 6.4, location: "GSW-PIT", level: "normal" },
 ]
 
 const monthlyData = [
@@ -38,6 +38,10 @@ const monthlyData = [
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("dashboard")
   const [filteredData, setFilteredData] = useState(dailyData)
+  const [currentFilters, setCurrentFilters] = useState<{
+    location: string
+    dateRange?: { from: Date; to: Date }
+  }>({ location: "all" })
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -81,6 +85,12 @@ export default function Dashboard() {
   }
 
   const handleFilterChange = (filters: any) => {
+    // Store current filters
+    setCurrentFilters({
+      location: filters.location || "all",
+      dateRange: filters.dateRange
+    })
+    
     // Apply filters to data
     let filtered = dailyData
     if (filters.location && filters.location !== "all") {
@@ -184,7 +194,11 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             </div>
-            <AreaChart data={filteredData} />
+            <AreaChart 
+              data={filteredData} 
+              filteredLocation={currentFilters.location}
+              dateRange={currentFilters.dateRange}
+            />
           </div>
         )}
 
