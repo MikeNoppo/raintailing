@@ -55,9 +55,8 @@ export function RainfallChart({ data }: RainfallChartProps) {
       },
       tooltip: {
         callbacks: {
-          afterLabel: (context: any) => {
+          afterLabel: (context: { dataIndex: number }) => {
             const dataIndex = context.dataIndex
-            const rainfall = data[dataIndex].rainfall
             return `Lokasi: ${data[dataIndex].location}`
           },
         },

@@ -16,6 +16,13 @@ import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import { toast } from "sonner"
 
+interface Location {
+  id: string;
+  name: string;
+  code: string;
+  status: string;
+}
+
 export function AdminPanel() {
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [rainfall, setRainfall] = useState("")
@@ -23,7 +30,7 @@ export function AdminPanel() {
   const [notes, setNotes] = useState("")
   const [dragActive, setDragActive] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [locations, setLocations] = useState<any[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Load locations from localStorage
@@ -32,7 +39,7 @@ export function AdminPanel() {
     if (savedLocations) {
       try {
         const parsed = JSON.parse(savedLocations)
-        setLocations(parsed.filter((loc: any) => loc.status === 'active'))
+        setLocations(parsed.filter((loc: Location) => loc.status === 'active'))
       } catch (error) {
         console.error('Error loading locations:', error)
       }

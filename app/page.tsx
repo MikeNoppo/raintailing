@@ -4,9 +4,8 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CloudRain, Droplets, TrendingUp, AlertTriangle } from "lucide-react"
+import { CloudRain, Droplets, TrendingUp } from "lucide-react"
 import { RainfallChart } from "@/components/rainfall-chart"
-import { MonthlyChart } from "@/components/monthly-chart"
 import { RainfallBarChart } from "@/components/rainfall-bar-chart"
 import { DataTable } from "@/components/data-table"
 import { FilterControls } from "@/components/filter-controls"
@@ -17,7 +16,7 @@ import { toast } from "sonner"
 import { AreaChart } from "@/components/area-chart"
 import { RainfallClassificationChart, RainfallClassificationSummary } from "@/components/rainfall-classification-chart"
 import { RainfallAnalyticsDashboard } from "@/components/rainfall-analytics-dashboard"
-import { dailyData, monthlyData } from "@/lib/data/rainfall-data"
+import { dailyData } from "@/lib/data/rainfall-data"
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("dashboard")
@@ -67,7 +66,10 @@ export default function Dashboard() {
     return { color: "bg-red-500", text: "Tinggi" }
   }
 
-  const handleFilterChange = (filters: any) => {
+  const handleFilterChange = (filters: {
+    location: string;
+    dateRange?: { from: Date; to: Date };
+  }) => {
     // Store current filters
     setCurrentFilters({
       location: filters.location || "all",
@@ -79,11 +81,11 @@ export default function Dashboard() {
     if (filters.location && filters.location !== "all") {
       filtered = filtered.filter((item) => item.location === filters.location)
     }
-    if (filters.dateRange) {
+    if (filters.dateRange && filters.dateRange.from && filters.dateRange.to) {
       // Apply date range filter
       filtered = filtered.filter((item) => {
         const itemDate = new Date(item.date)
-        return itemDate >= filters.dateRange.from && itemDate <= filters.dateRange.to
+        return itemDate >= filters.dateRange!.from && itemDate <= filters.dateRange!.to
       })
     }
     setFilteredData(filtered)

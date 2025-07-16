@@ -13,18 +13,23 @@ import {
 } from "@/components/ui/chart"
 
 // Default locations based on location-management.tsx
-const defaultLocations = [
-  { id: "1", name: "Gosowong Pit", code: "GSW-PIT" },
-  { id: "2", name: "Gosowong Helipad (DP3)", code: "GSW-DP3" },
-  { id: "3", name: "Tailing dam (TSF)", code: "TSF" },
-  { id: "4", name: "Kencana (Portal)", code: "KNC-PRT" },
-  { id: "5", name: "Toguraci (Portal)", code: "TGR-PRT" },
-  { id: "6", name: "Gosowong North", code: "GSW-NTH" },
+const defaultLocations: Location[] = [
+  { id: "1", name: "Gosowong Pit", code: "GSW-PIT", status: "active" },
+  { id: "2", name: "Gosowong Helipad (DP3)", code: "GSW-DP3", status: "active" },
+  { id: "3", name: "Tailing dam (TSF)", code: "TSF", status: "active" },
+  { id: "4", name: "Kencana (Portal)", code: "KNC-PRT", status: "active" },
+  { id: "5", name: "Toguraci (Portal)", code: "TGR-PRT", status: "active" },
+  { id: "6", name: "Gosowong North", code: "GSW-NTH", status: "active" },
 ]
 
+interface DataPoint {
+  date: string;
+  [key: string]: string | number;
+}
+
 // Generate sample rainfall data for all stations
-const generateRainfallData = () => {
-  const data = []
+const generateRainfallData = (): DataPoint[] => {
+  const data: DataPoint[] = []
   const startDate = new Date("2024-04-01")
 
   for (let i = 0; i < 90; i++) {
@@ -32,7 +37,7 @@ const generateRainfallData = () => {
     date.setDate(date.getDate() + i)
 
     // Generate realistic rainfall patterns for each station
-    const dataPoint: any = {
+    const dataPoint: DataPoint = {
       date: date.toISOString().split("T")[0],
     }
 
@@ -47,8 +52,6 @@ const generateRainfallData = () => {
 
   return data
 }
-
-const chartData = generateRainfallData()
 
 // Color configuration for each location with special color for Toguraci
 const chartConfig = {
@@ -78,6 +81,13 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
+interface Location {
+  id: string;
+  name: string;
+  code: string;
+  status: string;
+}
+
 interface RainfallAreaChartProps {
   data?: Array<{
     date: string
@@ -89,7 +99,7 @@ interface RainfallAreaChartProps {
 }
 
 export function AreaChart({ data: propData, filteredLocation = "all", dateRange }: RainfallAreaChartProps) {
-  const [locations, setLocations] = React.useState(defaultLocations)
+  const [locations, setLocations] = React.useState<Location[]>(defaultLocations)
 
   // Load locations from localStorage
   React.useEffect(() => {
@@ -97,7 +107,7 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
     if (savedLocations) {
       try {
         const parsed = JSON.parse(savedLocations)
-        const activeLocations = parsed.filter((loc: any) => loc.status === 'active')
+        const activeLocations = parsed.filter((loc: Location) => loc.status === 'active')
         setLocations(activeLocations)
       } catch (error) {
         console.error('Error loading locations:', error)
@@ -111,7 +121,7 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
       if (savedLocations) {
         try {
           const parsed = JSON.parse(savedLocations)
-          const activeLocations = parsed.filter((loc: any) => loc.status === 'active')
+          const activeLocations = parsed.filter((loc: Location) => loc.status === 'active')
           setLocations(activeLocations)
         } catch (error) {
           console.error('Error loading locations:', error)
@@ -150,7 +160,7 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
         const date = new Date(startDate)
         date.setDate(date.getDate() + i)
 
-        const dataPoint: any = {
+        const dataPoint: DataPoint = {
           date: date.toISOString().split("T")[0],
         }
 
@@ -211,7 +221,7 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
 
   // Generate dynamic chart config based on displayed locations
   const dynamicChartConfig = React.useMemo(() => {
-    const config: any = {}
+    const config: ChartConfig = {}
     displayedLocations.forEach((location) => {
       config[location.code] = {
         label: location.name,

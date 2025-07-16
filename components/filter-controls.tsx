@@ -12,14 +12,24 @@ import { id } from "date-fns/locale"
 import type { DateRange } from "react-day-picker"
 import { cn } from "@/lib/utils"
 
+interface Location {
+  id: string;
+  name: string;
+  code: string;
+  status: string;
+}
+
 interface FilterControlsProps {
-  onFilterChange: (filters: any) => void
+  onFilterChange: (filters: {
+    location: string;
+    dateRange?: { from: Date; to: Date };
+  }) => void
 }
 
 export function FilterControls({ onFilterChange }: FilterControlsProps) {
   const [location, setLocation] = useState("all")
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
-  const [locations, setLocations] = useState<any[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
 
   // Load locations from localStorage
   useEffect(() => {
@@ -28,7 +38,7 @@ export function FilterControls({ onFilterChange }: FilterControlsProps) {
       if (savedLocations) {
         try {
           const parsed = JSON.parse(savedLocations)
-          setLocations(parsed.filter((loc: any) => loc.status === 'active'))
+          setLocations(parsed.filter((loc: Location) => loc.status === 'active'))
         } catch (error) {
           console.error('Error loading locations:', error)
         }
@@ -62,12 +72,14 @@ export function FilterControls({ onFilterChange }: FilterControlsProps) {
 
   const handleLocationChange = (value: string) => {
     setLocation(value)
-    onFilterChange({ location: value, dateRange })
+    const convertedRange = dateRange?.from && dateRange?.to ? { from: dateRange.from, to: dateRange.to } : undefined
+    onFilterChange({ location: value, dateRange: convertedRange })
   }
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
     setDateRange(range)
-    onFilterChange({ location, dateRange: range })
+    const convertedRange = range?.from && range?.to ? { from: range.from, to: range.to } : undefined
+    onFilterChange({ location, dateRange: convertedRange })
   }
 
   const clearDateRange = () => {

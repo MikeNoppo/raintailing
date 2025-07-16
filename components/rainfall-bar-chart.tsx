@@ -5,6 +5,13 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
+interface AggregatedDataItem {
+  date?: string;
+  month?: string;
+  rainfall: number;
+  location?: string;
+}
+
 interface RainfallBarChartProps {
   data: Array<{
     date?: string
@@ -207,7 +214,7 @@ export function RainfallBarChart({
   const getLabels = () => {
     // If showing daily data for a specific location
     if (type === "monthly-location-total" && selectedLocation && selectedLocation !== "all") {
-      return aggregatedData.map((item: any) => {
+      return aggregatedData.map((item: AggregatedDataItem) => {
         if (item.date) {
           const date = new Date(item.date)
           return date.toLocaleDateString("id-ID", { 
@@ -220,7 +227,7 @@ export function RainfallBarChart({
     }
     
     if (type === "location-total" || type === "monthly-location-total") {
-      return aggregatedData.map((item: any) => item.location || "Unknown")
+      return aggregatedData.map((item: AggregatedDataItem) => item.location || "Unknown")
     }
     if (type === "monthly") {
       return data.map((item) => item.month || "")
@@ -300,7 +307,7 @@ export function RainfallBarChart({
   const datasets = [
     {
       label: getChartLabel(),
-      data: aggregatedData.map((item: any) => item.rainfall),
+      data: aggregatedData.map((item: AggregatedDataItem) => item.rainfall),
       backgroundColor: "rgba(59, 130, 246, 0.8)",
       borderColor: "rgb(59, 130, 246)",
       borderWidth: 1,
@@ -352,8 +359,8 @@ export function RainfallBarChart({
       },
       tooltip: {
         callbacks: {
-          label: function(context: any) {
-            const value = context.parsed.y || context.parsed.x
+          label: function(context: { dataset: { label?: string }; parsed: { y?: number; x?: number } }) {
+            const value = context.parsed.y || context.parsed.x || 0
             if (type === "location-total" || type === "monthly-location-total") {
               return `${context.dataset.label}: ${value.toFixed(2)} mm`
             }
