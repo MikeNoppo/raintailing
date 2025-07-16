@@ -27,32 +27,6 @@ interface DataPoint {
   [key: string]: string | number;
 }
 
-// Generate sample rainfall data for all stations
-const generateRainfallData = (): DataPoint[] => {
-  const data: DataPoint[] = []
-  const startDate = new Date("2024-04-01")
-
-  for (let i = 0; i < 90; i++) {
-    const date = new Date(startDate)
-    date.setDate(date.getDate() + i)
-
-    // Generate realistic rainfall patterns for each station
-    const dataPoint: DataPoint = {
-      date: date.toISOString().split("T")[0],
-    }
-
-    // Generate data for each location
-    defaultLocations.forEach((location, index) => {
-      const baseRainfall = Math.max(0, Math.random() * 50 + Math.sin(i * (0.1 + index * 0.02)) * 20)
-      dataPoint[location.code] = Math.round(baseRainfall * 10) / 10
-    })
-
-    data.push(dataPoint)
-  }
-
-  return data
-}
-
 // Color configuration for each location with special color for Toguraci
 const chartConfig = {
   "GSW-PIT": {
