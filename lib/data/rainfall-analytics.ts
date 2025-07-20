@@ -1,14 +1,9 @@
-import { dailyData, type RainfallData } from "./rainfall-data"
+import { dailyData } from "./rainfall-data"
+import { RAINFALL_CATEGORIES } from '@/lib/constants'
+import type { RainfallCategory, RainfallData } from '@/lib/types'
 
-// Rainfall classification categories
-export const rainfallCategories = {
-  tidakHujan: { min: 0, max: 0, label: "Tidak Hujan", color: "#94a3b8", emoji: "☀️" },
-  ringan: { min: 0.1, max: 20, label: "Hujan Ringan", color: "#22c55e", emoji: "🌦️" },
-  sedang: { min: 20, max: 50, label: "Hujan Sedang", color: "#f59e0b", emoji: "☔" },
-  lebat: { min: 50, max: Infinity, label: "Hujan Lebat", color: "#ef4444", emoji: "🌧️" },
-} as const
-
-export type RainfallCategory = keyof typeof rainfallCategories
+export const rainfallCategories = RAINFALL_CATEGORIES
+export type { RainfallCategory }
 
 // Classify single rainfall amount
 export function classifyRainfall(amount: number): RainfallCategory {
@@ -40,7 +35,7 @@ export function getRainfallStatsByLocation(data: RainfallData[] = dailyData) {
   }, {} as Record<string, RainfallData[]>)
 
   // Calculate stats for each location
-  Object.entries(groupedData).forEach(([location, locationData]) => {
+  Object.entries(groupedData).forEach(([location, locationData]: [string, RainfallData[]]) => {
     const categories: Record<RainfallCategory, number> = {
       tidakHujan: 0,
       ringan: 0,
@@ -52,7 +47,7 @@ export function getRainfallStatsByLocation(data: RainfallData[] = dailyData) {
     let maxRainfall = 0
     let minRainfall = Infinity
 
-    locationData.forEach(item => {
+    locationData.forEach((item: RainfallData) => {
       const category = classifyRainfall(item.rainfall)
       categories[category]++
       

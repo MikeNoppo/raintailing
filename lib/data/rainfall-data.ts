@@ -1,4 +1,6 @@
-export const dailyData = [
+import type { RainfallData, MonthlyData } from '@/lib/types'
+
+export const dailyData: RainfallData[] = [
 { date: "2025-06-01", rainfall: 7.00, location: "GSW-PIT" },
 { date: "2025-06-01", rainfall: 9.50, location: "GSW-DP3" },
 { date: "2025-06-01", rainfall: 8.50, location: "TSF" },
@@ -210,7 +212,7 @@ export const dailyData = [
 
 ]
 
-export const monthlyData = [
+export const monthlyData: MonthlyData[] = [
   { month: "Jan", rainfall: 145.2, average: 120.5 },
   { month: "Feb", rainfall: 98.7, average: 110.2 },
   { month: "Mar", rainfall: 167.3, average: 135.8 },
@@ -218,16 +220,3 @@ export const monthlyData = [
   { month: "May", rainfall: 189.5, average: 175.2 },
   { month: "Jun", rainfall: 261.7, average: 230.1 }, // Data berdasarkan Excel: rata-rata dari semua lokasi Juni 2025
 ]
-
-// Types for better type safety
-export interface RainfallData {
-  date: string
-  rainfall: number
-  location: string
-}
-
-export interface MonthlyData {
-  month: string
-  rainfall: number
-  average: number
-}
