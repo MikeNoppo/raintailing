@@ -88,7 +88,7 @@ export function DashboardCharts({
             start: filters.dateRange.from.toISOString().split('T')[0],
             end: filters.dateRange.to.toISOString().split('T')[0]
           } : undefined}
-          showAsDonut={true}
+          showAsDonut={false}
           title="Klasifikasi Curah Hujan"
           description="Proporsi kategori curah hujan (Pie Chart)"
         />
