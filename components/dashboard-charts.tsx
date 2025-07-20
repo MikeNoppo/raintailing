@@ -31,6 +31,13 @@ export function DashboardCharts({
       {/* Filter Controls */}
       <FilterControls onFilterChange={onFilterChange} />
 
+      {/* Area Chart */}
+      <AreaChart 
+        data={filteredData} 
+        filteredLocation={filters.location}
+        dateRange={filters.dateRange}
+      />
+
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
@@ -94,13 +101,6 @@ export function DashboardCharts({
           } : undefined}
         />
       </div>
-
-      {/* Area Chart */}
-      <AreaChart 
-        data={filteredData} 
-        filteredLocation={filters.location}
-        dateRange={filters.dateRange}
-      />
     </>
   )
 }
