@@ -1,4 +1,4 @@
-import type { Location, RainfallCategory } from '@/lib/types'
+import type { Location } from '@/lib/types'
 
 // Default locations configuration
 export const DEFAULT_LOCATIONS: Location[] = [

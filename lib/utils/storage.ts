@@ -15,7 +15,7 @@ export class LocalStorageManager {
       if (saved) {
         const parsed = JSON.parse(saved)
         // Ensure dates are properly parsed
-        return parsed.map((loc: any) => ({
+        return parsed.map((loc: Location & { createdAt: string }) => ({
           ...loc,
           createdAt: new Date(loc.createdAt)
         }))

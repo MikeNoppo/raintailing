@@ -12,7 +12,8 @@ import {
   rainfallCategories,
   type RainfallCategory 
 } from "@/lib/data/rainfall-analytics"
-import { dailyData, type RainfallData } from "@/lib/data/rainfall-data"
+import { dailyData } from "@/lib/data/rainfall-data"
+import type { RainfallData } from "@/lib/types"
 import { RainfallClassificationChart } from "./rainfall-classification-chart"
 
 interface RainfallAnalyticsDashboardProps {

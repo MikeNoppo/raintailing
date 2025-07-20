@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect, Suspense } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { useSearchParams } from "next/navigation"
 import { DataTable } from "@/components/data-table"
 import { FilterControls } from "@/components/filter-controls"
 import { AdminPanel } from "@/components/admin-panel"
@@ -17,7 +16,6 @@ import { TAB_IDS, DASHBOARD_CONFIG } from "@/lib/constants/dashboard"
 
 function DashboardContent() {
   const [activeTab, setActiveTab] = useState<string>(DASHBOARD_CONFIG.DEFAULT_TAB)
-  const router = useRouter()
   const searchParams = useSearchParams()
   const { isAuthenticated, logout, requireAuth } = useAuth()
   const { filters, filteredData, updateFilters } = useDataFilter(dailyData)

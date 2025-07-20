@@ -47,7 +47,7 @@ export function useAuth() {
         toast.error('Username atau password salah!')
         return false
       }
-    } catch (error) {
+    } catch {
       toast.error('Terjadi kesalahan saat login')
       return false
     } finally {

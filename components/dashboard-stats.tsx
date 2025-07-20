@@ -1,6 +1,6 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CloudRain, Droplets, TrendingUp } from "lucide-react"
 import { getRainfallStatus, calculateAverageRainfall, getCurrentRainfall } from "@/lib/utils/dashboard-utils"
 import { DASHBOARD_CONFIG } from "@/lib/constants/dashboard"
