@@ -32,7 +32,6 @@ export const TAB_IDS = {
   DASHBOARD: "dashboard",
   CLASSIFICATION: "classification", 
   DATA: "data",
-  LOCATIONS: "locations",
   ADMIN: "admin"
 } as const
 

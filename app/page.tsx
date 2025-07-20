@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/data-table"
 import { FilterControls } from "@/components/filter-controls"
 import { AdminPanel } from "@/components/admin-panel"
-import { LocationManagement } from "@/components/location-management"
 import { Header } from "@/components/header"
 import { RainfallAnalyticsDashboard } from "@/components/rainfall-analytics-dashboard"
 import { DashboardStats } from "@/components/dashboard-stats"
@@ -103,12 +102,6 @@ function DashboardContent() {
             </div>
             <FilterControls onFilterChange={handleFilterChange} />
             <DataTable data={filteredData} />
-          </div>
-        )}
-
-        {activeTab === TAB_IDS.LOCATIONS && (
-          <div className="space-y-6">
-            <LocationManagement />
           </div>
         )}
 
