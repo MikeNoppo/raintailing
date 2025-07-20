@@ -6,7 +6,6 @@ import { DataTable } from "@/components/data-table"
 import { FilterControls } from "@/components/filter-controls"
 import { AdminPanel } from "@/components/admin-panel"
 import { Header } from "@/components/header"
-import { RainfallAnalyticsDashboard } from "@/components/rainfall-analytics-dashboard"
 import { DashboardStats } from "@/components/dashboard-stats"
 import { DashboardCharts } from "@/components/dashboard-charts"
 import { dailyData } from "@/lib/data/rainfall-data"
@@ -65,30 +64,6 @@ function DashboardContent() {
               filteredData={filteredData}
               filters={filters}
               onFilterChange={handleFilterChange}
-            />
-          </div>
-        )}
-
-        {activeTab === TAB_IDS.CLASSIFICATION && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold">Klasifikasi Curah Hujan</h2>
-                <p className="text-muted-foreground">
-                  Analisis proporsi kategori curah hujan berdasarkan standar meteorologi Indonesia
-                </p>
-              </div>
-            </div>
-            
-            <FilterControls onFilterChange={handleFilterChange} />
-            
-            <RainfallAnalyticsDashboard 
-              data={dailyData}
-              selectedLocation={filters.location !== "all" ? filters.location : undefined}
-              dateRange={filters.dateRange ? {
-                start: filters.dateRange.from.toISOString().split('T')[0],
-                end: filters.dateRange.to.toISOString().split('T')[0]
-              } : undefined}
             />
           </div>
         )}

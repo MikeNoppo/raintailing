@@ -30,7 +30,6 @@ export const DASHBOARD_CONFIG = {
 // UI Constants
 export const TAB_IDS = {
   DASHBOARD: "dashboard",
-  CLASSIFICATION: "classification", 
   DATA: "data",
   ADMIN: "admin"
 } as const
