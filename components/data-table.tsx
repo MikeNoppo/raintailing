@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Download } from "lucide-react"
 import { toast } from "sonner"
-import { exportRainfallDataToExcel, exportRainfallPivotToExcel } from "@/lib/utils/excel-export"
+import { exportRainfallPivotToExcel } from "@/lib/utils/excel-export"
 
 interface DataTableProps {
   data: Array<{

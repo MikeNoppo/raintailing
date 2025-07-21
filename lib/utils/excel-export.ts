@@ -98,7 +98,13 @@ export const exportRainfallPivotToExcel = async (
     })
 
     // Calculate statistics
-    const stats: { [location: string]: any } = {}
+    const stats: { [location: string]: {
+      total: number;
+      average: number;
+      peak: number;
+      rainDays: number;
+      wetDays: number;
+    } } = {}
     
     locations.forEach(location => {
       const locationData = data.filter(d => d.location === location)
