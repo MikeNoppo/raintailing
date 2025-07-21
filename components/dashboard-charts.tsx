@@ -66,16 +66,15 @@ export function DashboardCharts({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {filters.location !== "all" ? (
-              <RainfallChart 
-                data={filteredData} 
-              />
-            ) : (
-              <RainfallBarChart 
-                data={dailyData}
-                type="monthly-location-total"
-              />
-            )}
+            <RainfallBarChart 
+              data={dailyData}
+              type="monthly-location-total"
+              selectedLocation={filters.location !== "all" ? filters.location : undefined}
+              dateRange={filters.dateRange ? {
+                start: filters.dateRange.from.toISOString().split('T')[0],
+                end: filters.dateRange.to.toISOString().split('T')[0]
+              } : undefined}
+            />
           </CardContent>
         </Card>
       </div>
