@@ -25,6 +25,18 @@ export function calculateAverageRainfall(data: Array<{ rainfall: number }>) {
 /**
  * Gets current rainfall from latest data point
  */
-export function getCurrentRainfall(data: Array<{ rainfall: number }>) {
+export function getCurrentRainfall(data: Array<{ rainfall: number; date?: string }>) {
+  if (data.length === 0) return 0
+  
+  // Jika data memiliki tanggal, ambil yang terbaru
+  if (data[0]?.date) {
+    const sortedData = [...data].sort((a, b) => {
+      if (!a.date || !b.date) return 0
+      return new Date(b.date).getTime() - new Date(a.date).getTime()
+    })
+    return sortedData[0]?.rainfall || 0
+  }
+  
+  // Fallback ke data terakhir jika tidak ada tanggal
   return data[data.length - 1]?.rainfall || 0
 }

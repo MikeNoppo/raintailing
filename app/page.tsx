@@ -57,7 +57,10 @@ function DashboardContent() {
         {activeTab === TAB_IDS.DASHBOARD && (
           <div className="space-y-6">
             {/* Summary Cards */}
-            <DashboardStats data={dailyData} />
+            <DashboardStats 
+              data={dailyData} 
+              selectedLocation={filters.location}
+            />
 
             {/* Charts */}
             <DashboardCharts 
