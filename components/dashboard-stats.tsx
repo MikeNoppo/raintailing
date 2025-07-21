@@ -46,12 +46,20 @@ const calculateWeeklyChange = (data: RainfallData[]) => {
 
 export function DashboardStats({ data, selectedLocation }: DashboardStatsProps) {
   const [currentLocationIndex, setCurrentLocationIndex] = useState(0)
+  const [isAnimating, setIsAnimating] = useState(false)
   
   // Auto-rotate locations setiap 3 detik ketika tidak ada lokasi yang dipilih
   useEffect(() => {
     if (!selectedLocation || selectedLocation === "all") {
       const interval = setInterval(() => {
-        setCurrentLocationIndex((prev) => (prev + 1) % LOCATIONS.length)
+        setIsAnimating(true)
+        
+        // Delay untuk animasi fade-out
+        setTimeout(() => {
+          setCurrentLocationIndex((prev) => (prev + 1) % LOCATIONS.length)
+          setIsAnimating(false)
+        }, 200) // 200ms fade-out duration
+        
       }, 3000) // 3 detik
       
       return () => clearInterval(interval)
@@ -76,42 +84,82 @@ export function DashboardStats({ data, selectedLocation }: DashboardStatsProps) 
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <Card>
+      <Card className={`transition-all duration-300 ${
+        isAnimating ? 'ring-2 ring-blue-200 shadow-lg' : ''
+      }`}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             Curah Hujan Hari Ini
             {(!selectedLocation || selectedLocation === "all") && (
-              <span className="text-xs font-normal text-muted-foreground block">
+              <span 
+                className={`text-xs font-normal text-muted-foreground block transition-all duration-300 ${
+                  isAnimating ? 'opacity-0 transform translate-y-1' : 'opacity-100 transform translate-y-0'
+                }`}
+              >
                 {getLocationName(displayLocation)}
               </span>
             )}
           </CardTitle>
-          <Droplets className="h-4 w-4 text-muted-foreground" />
+          <Droplets className={`h-4 w-4 text-muted-foreground transition-all duration-300 ${
+            isAnimating ? 'transform rotate-12 scale-110' : 'transform rotate-0 scale-100'
+          }`} />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{currentRainfall} mm</div>
-          <div className="flex items-center mt-2">
-            <div className={`w-2 h-2 rounded-full mr-2 ${rainfallStatus.color}`} />
+          <div 
+            className={`text-2xl font-bold transition-all duration-300 delay-75 ${
+              isAnimating ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'
+            }`}
+          >
+            {currentRainfall} mm
+          </div>
+          <div 
+            className={`flex items-center mt-2 transition-all duration-300 delay-100 ${
+              isAnimating ? 'opacity-0 transform translate-x-2' : 'opacity-100 transform translate-x-0'
+            }`}
+          >
+            <div className={`w-2 h-2 rounded-full mr-2 transition-all duration-300 ${rainfallStatus.color} ${
+              isAnimating ? 'scale-75' : 'scale-100'
+            }`} />
             <p className="text-xs text-muted-foreground">{rainfallStatus.text}</p>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className={`transition-all duration-300 ${
+        isAnimating ? 'ring-2 ring-blue-200 shadow-lg' : ''
+      }`}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             Rata-rata Mingguan
             {(!selectedLocation || selectedLocation === "all") && (
-              <span className="text-xs font-normal text-muted-foreground block">
+              <span 
+                className={`text-xs font-normal text-muted-foreground block transition-all duration-300 ${
+                  isAnimating ? 'opacity-0 transform translate-y-1' : 'opacity-100 transform translate-y-0'
+                }`}
+              >
                 {getLocationName(displayLocation)}
               </span>
             )}
           </CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <TrendingUp className={`h-4 w-4 text-muted-foreground transition-all duration-300 ${
+            isAnimating ? 'transform rotate-12 scale-110' : 'transform rotate-0 scale-100'
+          }`} />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{avgRainfall.toFixed(1)} mm</div>
-          <p className="text-xs text-muted-foreground">{weeklyChange}</p>
+          <div 
+            className={`text-2xl font-bold transition-all duration-300 delay-100 ${
+              isAnimating ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'
+            }`}
+          >
+            {avgRainfall.toFixed(1)} mm
+          </div>
+          <p 
+            className={`text-xs text-muted-foreground transition-all duration-300 delay-125 ${
+              isAnimating ? 'opacity-0 transform translate-x-2' : 'opacity-100 transform translate-x-0'
+            }`}
+          >
+            {weeklyChange}
+          </p>
         </CardContent>
       </Card>
 
