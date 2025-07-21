@@ -26,19 +26,8 @@ import {
 } from "@/components/ui/dialog"
 import { MapPin, Plus, Edit2, Trash2, Save } from "lucide-react"
 import { toast } from "sonner"
-
-interface Location {
-  id: string
-  name: string
-  code: string
-  description?: string
-  coordinates?: {
-    lat: number
-    lng: number
-  }
-  status: 'active' | 'inactive'
-  createdAt: Date
-}
+import { exportLocationDataToExcel } from "@/lib/utils/excel-export"
+import type { Location } from "@/lib/types"
 
 // Default locations based on your Excel data
 const defaultLocations: Location[] = [
@@ -213,16 +202,14 @@ export function LocationManagement() {
     toast.success("Status lokasi berhasil diubah")
   }
 
-  const exportLocations = () => {
-    const dataStr = JSON.stringify(locations, null, 2)
-    const dataBlob = new Blob([dataStr], { type: 'application/json' })
-    const url = URL.createObjectURL(dataBlob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'rainfall-locations.json'
-    link.click()
-    URL.revokeObjectURL(url)
-    toast.success("Data lokasi berhasil diekspor")
+  const exportLocations = async () => {
+    try {
+      await exportLocationDataToExcel(locations)
+      toast.success("Data lokasi berhasil diekspor ke Excel")
+    } catch (error) {
+      console.error("Export error:", error)
+      toast.error("Gagal mengekspor data lokasi ke Excel")
+    }
   }
 
   return (

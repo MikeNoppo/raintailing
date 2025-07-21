@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Download } from "lucide-react"
+import { toast } from "sonner"
+import { exportRainfallDataToExcel, exportRainfallPivotToExcel } from "@/lib/utils/excel-export"
 
 interface DataTableProps {
   data: Array<{
@@ -14,30 +16,14 @@ interface DataTableProps {
 }
 
 export function DataTable({ data }: DataTableProps) {
-  const exportToExcel = () => {
-    // Create CSV content
-    const headers = ["Tanggal", "Curah Hujan (mm)", "Lokasi"]
-    const csvContent = [
-      headers.join(","),
-      ...data.map((row) =>
-        [
-          row.date,
-          row.rainfall,
-          row.location,
-        ].join(","),
-      ),
-    ].join("\n")
-
-    // Create and download file
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
-    const url = URL.createObjectURL(blob)
-    link.setAttribute("href", url)
-    link.setAttribute("download", `data-curah-hujan-${new Date().toISOString().split("T")[0]}.csv`)
-    link.style.visibility = "hidden"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+  const exportToExcel = async () => {
+    try {
+      await exportRainfallPivotToExcel(data)
+      toast.success("Data berhasil diekspor ke Excel")
+    } catch (error) {
+      console.error("Export error:", error)
+      toast.error("Gagal mengekspor data ke Excel")
+    }
   }
 
   return (
