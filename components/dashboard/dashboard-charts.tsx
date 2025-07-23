@@ -1,11 +1,11 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { RainfallChart } from "@/components/rainfall-chart"
-import { RainfallBarChart } from "@/components/rainfall-bar-chart"
-import { RainfallClassificationChart, RainfallClassificationSummary } from "@/components/rainfall-classification-chart"
-import { AreaChart } from "@/components/area-chart"
-import { FilterControls } from "@/components/filter-controls"
+import { RainfallChart } from "@/components/charts/rainfall-chart"
+import { RainfallBarChart } from "@/components/charts/rainfall-bar-chart"
+import { RainfallClassificationChart, RainfallClassificationSummary } from "@/components/charts/rainfall-classification-chart"
+import { AreaChart } from "@/components/charts/area-chart"
+import { FilterControls } from "@/components/forms/filter-controls"
 import { dailyData } from "@/lib/data/rainfall-data"
 import type { RainfallData } from "@/lib/types"
 

@@ -15,7 +15,7 @@ import { CalendarIcon, Upload, Plus, FileSpreadsheet } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import { toast } from "sonner"
-import { LocationManagement } from "@/components/location-management"
+import { LocationManagement } from "@/components/admin/location-management"
 
 interface Location {
   id: string;
