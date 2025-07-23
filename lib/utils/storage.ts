@@ -47,33 +47,6 @@ export class LocalStorageManager {
   }
 
   /**
-   * Get authentication status
-   */
-  static getAuthStatus(): boolean {
-    try {
-      return localStorage.getItem(STORAGE_KEYS.AUTH_STATUS) === 'true'
-    } catch (error) {
-      console.error('Error getting auth status:', error)
-      return false
-    }
-  }
-
-  /**
-   * Set authentication status
-   */
-  static setAuthStatus(isAuthenticated: boolean): void {
-    try {
-      if (isAuthenticated) {
-        localStorage.setItem(STORAGE_KEYS.AUTH_STATUS, 'true')
-      } else {
-        localStorage.removeItem(STORAGE_KEYS.AUTH_STATUS)
-      }
-    } catch (error) {
-      console.error('Error setting auth status:', error)
-    }
-  }
-
-  /**
    * Clear all app data
    */
   static clearAll(): void {

@@ -119,13 +119,6 @@ export const CHART_CONFIG = {
 // localStorage keys
 export const STORAGE_KEYS = {
   LOCATIONS: 'rainfall-locations',
-  AUTH_STATUS: 'isAuthenticated',
-} as const
-
-// Auth credentials (for demo)
-export const DEMO_CREDENTIALS = {
-  USERNAME: 'admin',
-  PASSWORD: 'admin123',
 } as const
 
 // Date format options

@@ -1,45 +1,67 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { signIn } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useAuth } from "@/lib/hooks/useAuth"
-import { DEMO_CREDENTIALS } from "@/lib/constants"
+import { toast } from "sonner"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
-  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const { login, isLoading } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await login(username, password)
+    setIsLoading(true)
+
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        toast.error("Email atau password salah!")
+      } else {
+        toast.success("Login berhasil!")
+        // Redirect to appropriate page
+        const returnTab = searchParams.get('return') || 'dashboard'
+        router.push(`/?tab=${returnTab}`)
+      }
+    } catch (error) {
+      console.error("Login error:", error)
+      toast.error("Terjadi kesalahan saat login")
+    } finally {
+      setIsLoading(false)
+    }
   }
   return (
     <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit} {...props}>
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Login to your account</h1>
         <p className="text-muted-foreground text-sm text-balance">
-          Enter your username and password to login to your account
+          Enter your email and password to login to your account
         </p>
-        <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded mt-2">
-          Demo: username: <strong>{DEMO_CREDENTIALS.USERNAME}</strong>, password: <strong>{DEMO_CREDENTIALS.PASSWORD}</strong>
-        </div>
       </div>
       <div className="grid gap-6">
         <div className="grid gap-3">
-          <Label htmlFor="username">Username</Label>
+          <Label htmlFor="email">Email or Username</Label>
           <Input 
-            id="username" 
+            id="email" 
             type="text" 
-            placeholder="username" 
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            placeholder="email@example.com or username" 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required 
           />
         </div>
