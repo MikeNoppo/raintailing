@@ -44,11 +44,11 @@ model Session {
 model User {
   id            String    @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?   // Keep for NextAuth compatibility but not used for login
   emailVerified DateTime?
   image         String?
-  username      String?   @unique
-  password      String?   // For credentials provider
+  username      String    @unique // Required for login
+  password      String    // Required for credentials provider
   role          UserRole  @default(VIEWER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

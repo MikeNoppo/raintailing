@@ -13,7 +13,7 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
-  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -25,13 +25,13 @@ export function LoginForm({
 
     try {
       const result = await signIn("credentials", {
-        email,
+        username,
         password,
         redirect: false,
       })
 
       if (result?.error) {
-        toast.error("Email atau password salah!")
+        toast.error("Username atau password salah!")
       } else {
         toast.success("Login berhasil!")
         // Redirect to appropriate page
@@ -50,18 +50,18 @@ export function LoginForm({
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Login to your account</h1>
         <p className="text-muted-foreground text-sm text-balance">
-          Enter your email and password to login to your account
+          Enter your username and password to login to your account
         </p>
       </div>
       <div className="grid gap-6">
         <div className="grid gap-3">
-          <Label htmlFor="email">Email or Username</Label>
+          <Label htmlFor="username">Username</Label>
           <Input 
-            id="email" 
+            id="username" 
             type="text" 
-            placeholder="email@example.com or username" 
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your username" 
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required 
           />
         </div>

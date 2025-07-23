@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        email: true,
         username: true,
         role: true,
         createdAt: true,
@@ -55,27 +54,22 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const { name, email, username } = await request.json()
+    const { name, username } = await request.json()
 
-    // Check if email/username is already taken by another user
-    if (email || username) {
+    // Check if username is already taken by another user
+    if (username) {
       const existingUser = await prisma.user.findFirst({
         where: {
           AND: [
             { id: { not: session.user.id } },
-            {
-              OR: [
-                email ? { email } : {},
-                username ? { username } : {}
-              ]
-            }
+            { username }
           ]
         }
       })
 
       if (existingUser) {
         return NextResponse.json(
-          { error: 'Email or username already taken' },
+          { error: 'Username already taken' },
           { status: 400 }
         )
       }
@@ -85,13 +79,11 @@ export async function PATCH(request: NextRequest) {
       where: { id: session.user.id },
       data: {
         ...(name !== undefined && { name }),
-        ...(email !== undefined && { email }),
         ...(username !== undefined && { username }),
       },
       select: {
         id: true,
         name: true,
-        email: true,
         username: true,
         role: true,
         createdAt: true,
