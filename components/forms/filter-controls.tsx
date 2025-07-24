@@ -6,18 +6,12 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Filter, X } from "lucide-react"
+import { CalendarIcon, Filter, X, RefreshCw } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import type { DateRange } from "react-day-picker"
 import { cn } from "@/lib/utils"
-
-interface Location {
-  id: string;
-  name: string;
-  code: string;
-  status: string;
-}
+import { useLocations } from "@/lib/hooks/useLocations"
 
 interface FilterControlsProps {
   onFilterChange: (filters: {
@@ -29,46 +23,13 @@ interface FilterControlsProps {
 export function FilterControls({ onFilterChange }: FilterControlsProps) {
   const [location, setLocation] = useState("all")
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
-  const [locations, setLocations] = useState<Location[]>([])
-
-  // Load locations from localStorage
-  useEffect(() => {
-    const loadLocations = () => {
-      const savedLocations = localStorage.getItem('rainfall-locations')
-      if (savedLocations) {
-        try {
-          const parsed = JSON.parse(savedLocations)
-          setLocations(parsed.filter((loc: Location) => loc.status === 'active'))
-        } catch (error) {
-          console.error('Error loading locations:', error)
-        }
-      }
-    }
-
-    // Load initially
-    loadLocations()
-
-    // Listen for storage changes (when locations are updated in another component)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'rainfall-locations') {
-        loadLocations()
-      }
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    
-    // Also listen for custom events within the same window
-    const handleLocationUpdate = () => {
-      loadLocations()
-    }
-    
-    window.addEventListener('locationsUpdated', handleLocationUpdate)
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('locationsUpdated', handleLocationUpdate)
-    }
-  }, [])
+  
+  // Fetch locations from API
+  const { locations, loading: locationsLoading, error: locationsError, refetch } = useLocations({ 
+    status: 'ACTIVE', 
+    autoRefresh: true, 
+    refreshInterval: 60000 
+  })
 
   const handleLocationChange = (value: string) => {
     setLocation(value)
@@ -122,24 +83,40 @@ export function FilterControls({ onFilterChange }: FilterControlsProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Location Filter */}
             <div className="space-y-2">
-              <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Lokasi Stasiun</label>
-              <Select value={location} onValueChange={handleLocationChange}>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">Lokasi Stasiun</label>
+                {locationsError && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={refetch}
+                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+              <Select value={location} onValueChange={handleLocationChange} disabled={locationsLoading}>
                 <SelectTrigger className="w-full bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-blue-500">
-                  <SelectValue placeholder="Pilih lokasi" />
+                  <SelectValue placeholder={locationsLoading ? "Memuat lokasi..." : "Pilih lokasi"} />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-gray-200">
                   <SelectItem value="all" className="hover:bg-gray-50">
                     Semua Lokasi
                   </SelectItem>
-                  {locations.length > 0 ? (
+                  {locationsError ? (
+                    <SelectItem value="error" disabled className="text-red-500">
+                      Error memuat lokasi
+                    </SelectItem>
+                  ) : locations.length > 0 ? (
                     locations.map((loc) => (
                       <SelectItem key={loc.id} value={loc.code} className="hover:bg-gray-50">
-                        {loc.name}
+                        {loc.name} ({loc.code})
                       </SelectItem>
                     ))
                   ) : (
-                    <SelectItem key="no-locations" value="no-locations" disabled className="hover:bg-gray-50">
-                      Tidak ada lokasi aktif. Tambahkan di menu Manajemen Lokasi.
+                    <SelectItem value="no-locations" disabled className="hover:bg-gray-50">
+                      {locationsLoading ? "Memuat..." : "Tidak ada lokasi aktif"}
                     </SelectItem>
                   )}
                 </SelectContent>
