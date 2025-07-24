@@ -5,6 +5,27 @@ export interface RainfallData {
   location: string
 }
 
+// Database compatible rainfall data type
+export interface RainfallDataDB {
+  id: string
+  date: string | Date
+  rainfall: number
+  notes?: string | null
+  location: {
+    id: string
+    code: string
+    name: string
+    status: string
+  }
+  user?: {
+    id: string
+    username: string
+    name?: string | null
+  }
+  createdAt: string | Date
+  updatedAt: string | Date
+}
+
 export interface MonthlyData {
   month: string
   rainfall: number

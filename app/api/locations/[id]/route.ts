@@ -7,7 +7,7 @@ import { LocationStatus } from '@prisma/client'
 // GET /api/locations/[id] - Get specific location
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -15,7 +15,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { id } = params
+    const { id } = await context.params
 
     const location = await prisma.location.findUnique({
       where: { id },
@@ -58,7 +58,7 @@ export async function GET(
 // PATCH /api/locations/[id] - Update location
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -71,7 +71,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { id } = params
+    const { id } = await context.params
     const body = await request.json()
     const { name, code, description, latitude, longitude, status } = body
 
@@ -129,7 +129,7 @@ export async function PATCH(
 // DELETE /api/locations/[id] - Delete location
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -142,7 +142,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { id } = params
+    const { id } = await context.params
 
     // Check if location exists
     const location = await prisma.location.findUnique({

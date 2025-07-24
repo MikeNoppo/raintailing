@@ -5,6 +5,7 @@ import { RainfallChart } from "@/components/charts/rainfall-chart"
 import { RainfallBarChart } from "@/components/charts/rainfall-bar-chart"
 import { RainfallClassificationChart, RainfallClassificationSummary } from "@/components/charts/rainfall-classification-chart"
 import { AreaChart } from "@/components/charts/area-chart"
+import { EnhancedRainfallChart, EnhancedRainfallBarChart } from "@/components/charts"
 import { FilterControls } from "@/components/forms/filter-controls"
 import { dailyData } from "@/lib/data/rainfall-data"
 import type { RainfallData } from "@/lib/types"
@@ -19,13 +20,20 @@ interface DashboardChartsProps {
     location: string;
     dateRange?: { from: Date; to: Date };
   }) => void
+  useApiData?: boolean
 }
 
 export function DashboardCharts({ 
   filteredData, 
   filters, 
-  onFilterChange 
+  onFilterChange,
+  useApiData = false
 }: DashboardChartsProps) {
+  const dateRange = filters.dateRange ? {
+    start: filters.dateRange.from.toISOString().split('T')[0],
+    end: filters.dateRange.to.toISOString().split('T')[0]
+  } : undefined
+
   return (
     <>
       {/* Filter Controls */}
@@ -43,10 +51,21 @@ export function DashboardCharts({
         <Card>
           <CardHeader>
             <CardTitle>Data Curah Hujan Harian</CardTitle>
-            <CardDescription>Grafik curah hujan 7 hari terakhir</CardDescription>
+            <CardDescription>
+              {useApiData ? "Data real-time dari database" : "Grafik curah hujan 7 hari terakhir"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <RainfallChart data={filteredData} />
+            {useApiData ? (
+              <EnhancedRainfallChart 
+                data={filteredData}
+                selectedLocation={filters.location !== "all" ? filters.location : undefined}
+                dateRange={dateRange}
+                useApiData={true}
+              />
+            ) : (
+              <RainfallChart data={filteredData} />
+            )}
           </CardContent>
         </Card>
 
@@ -55,26 +74,35 @@ export function DashboardCharts({
             <CardTitle>
               {filters.location !== "all" ? 
                 `Curah Hujan Harian - ${filters.location}` : 
-                "Total Curah Hujan per Lokasi (Bulanan)"
+                "Total Curah Hujan per Lokasi"
               }
             </CardTitle>
             <CardDescription>
-              {filters.location !== "all" ? 
-                "Data harian lokasi yang dipilih" : 
-                "Perbandingan antar lokasi monitoring"
+              {useApiData 
+                ? (filters.location !== "all" 
+                    ? "Data harian lokasi yang dipilih dari database" 
+                    : "Perbandingan antar lokasi dari database")
+                : "Data historis lokasi monitoring"
               }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <RainfallBarChart 
-              data={dailyData}
-              type="monthly-location-total"
-              selectedLocation={filters.location !== "all" ? filters.location : undefined}
-              dateRange={filters.dateRange ? {
-                start: filters.dateRange.from.toISOString().split('T')[0],
-                end: filters.dateRange.to.toISOString().split('T')[0]
-              } : undefined}
-            />
+            {useApiData ? (
+              <EnhancedRainfallBarChart 
+                data={filteredData}
+                selectedLocation={filters.location !== "all" ? filters.location : undefined}
+                dateRange={dateRange}
+                useApiData={true}
+                type={filters.location !== "all" ? "daily" : "location-total"}
+              />
+            ) : (
+              <RainfallBarChart 
+                data={dailyData}
+                type="monthly-location-total"
+                selectedLocation={filters.location !== "all" ? filters.location : undefined}
+                dateRange={dateRange}
+              />
+            )}
           </CardContent>
         </Card>
       </div>
@@ -83,21 +111,15 @@ export function DashboardCharts({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RainfallClassificationChart 
           location={filters.location !== "all" ? filters.location : undefined}
-          dateRange={filters.dateRange ? {
-            start: filters.dateRange.from.toISOString().split('T')[0],
-            end: filters.dateRange.to.toISOString().split('T')[0]
-          } : undefined}
+          dateRange={dateRange}
           showAsDonut={false}
           title="Klasifikasi Curah Hujan"
-          description="Proporsi kategori curah hujan (Pie Chart)"
+          description={useApiData ? "Proporsi kategori dari database" : "Proporsi kategori curah hujan (Pie Chart)"}
         />
         
         <RainfallClassificationSummary 
           location={filters.location !== "all" ? filters.location : undefined}
-          dateRange={filters.dateRange ? {
-            start: filters.dateRange.from.toISOString().split('T')[0],
-            end: filters.dateRange.to.toISOString().split('T')[0]
-          } : undefined}
+          dateRange={dateRange}
         />
       </div>
     </>

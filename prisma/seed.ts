@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { dailyData } from '../lib/data/rainfall-data'
 
 const prisma = new PrismaClient()
 
@@ -74,14 +75,47 @@ async function main() {
 
   console.log('🏢 Creating default locations...')
 
+  const createdLocations = []
   for (const locationData of defaultLocations) {
     const location = await prisma.location.upsert({
       where: { code: locationData.code },
       update: {},
       create: locationData,
     })
+    createdLocations.push(location)
     console.log(`  ✅ Created location: ${location.name} (${location.code})`)
   }
+
+  // Create location code to ID mapping
+  const locationMap = new Map(
+    createdLocations.map(loc => [loc.code, loc.id])
+  )
+
+  console.log('📊 Creating sample rainfall data...')
+  
+  // Insert sample rainfall data from mock data
+  let successCount = 0
+  for (const record of dailyData) {
+    try {
+      const locationId = locationMap.get(record.location)
+      if (locationId) {
+        await prisma.rainfallData.create({
+          data: {
+            date: new Date(record.date),
+            rainfall: record.rainfall,
+            locationId,
+            userId: adminUser.id,
+            notes: null
+          }
+        })
+        successCount++
+      }
+    } catch (error) {
+      console.warn(`  ⚠️ Skipped duplicate entry for ${record.date} - ${record.location}`)
+    }
+  }
+  
+  console.log(`  ✅ Created ${successCount} rainfall data records`)
 
   console.log('🎉 Seeding completed successfully!')
 }

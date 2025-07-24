@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, Droplets, Calendar, MapPin } from "lucide-react"
+import { TrendingUp, Droplets, Calendar, MapPin, Loader2 } from "lucide-react"
 import { 
   getRainfallStatsByLocation, 
   getOverallRainfallStats, 
@@ -14,7 +14,9 @@ import {
 } from "@/lib/data/rainfall-analytics"
 import { dailyData } from "@/lib/data/rainfall-data"
 import type { RainfallData } from "@/lib/types"
-import { RainfallClassificationChart } from "./rainfall-classification-chart"
+import { RainfallClassificationChart } from "@/components/charts/rainfall-classification-chart"
+import { useRainfallData } from "@/lib/hooks"
+import { transformRainfallDataForCharts, filterRainfallDataByDateRange, filterRainfallDataByLocation } from "@/lib/utils/data-transformers"
 
 interface RainfallAnalyticsDashboardProps {
   data?: RainfallData[]
@@ -23,30 +25,75 @@ interface RainfallAnalyticsDashboardProps {
     start: string
     end: string
   }
+  useApiData?: boolean
 }
 
 export function RainfallAnalyticsDashboard({ 
   data = dailyData, 
   selectedLocation,
-  dateRange 
+  dateRange,
+  useApiData = false
 }: RainfallAnalyticsDashboardProps) {
-  const filteredData = React.useMemo(() => {
-    let result = data
+  // Fetch data from API if useApiData is true
+  const { 
+    data: apiData, 
+    error: apiError, 
+    isLoading: apiLoading 
+  } = useRainfallData(
+    useApiData ? {
+      location: selectedLocation,
+      startDate: dateRange?.start,
+      endDate: dateRange?.end,
+      limit: 1000 // Get more data for analytics
+    } : {}
+  )
 
-    // Filter by date range
-    if (dateRange) {
-      result = result.filter(item => 
-        item.date >= dateRange.start && item.date <= dateRange.end
-      )
+  // Transform API data if available
+  const transformedApiData = React.useMemo(() => {
+    if (!useApiData || !apiData?.data) return null
+    return transformRainfallDataForCharts(apiData.data)
+  }, [useApiData, apiData])
+
+  // Use API data if available, otherwise fall back to prop data
+  const dataSource = useApiData ? (transformedApiData || []) : data
+
+  const filteredData = React.useMemo(() => {
+    let result = dataSource
+
+    // Filter by date range (only if not already filtered by API)
+    if (dateRange && !useApiData) {
+      result = filterRainfallDataByDateRange(result, dateRange.start, dateRange.end)
     }
 
-    // Filter by location
-    if (selectedLocation && selectedLocation !== "all") {
-      result = result.filter(item => item.location === selectedLocation)
+    // Filter by location (only if not already filtered by API)
+    if (selectedLocation && selectedLocation !== "all" && !useApiData) {
+      result = filterRainfallDataByLocation(result, selectedLocation)
     }
 
     return result
-  }, [data, selectedLocation, dateRange])
+  }, [dataSource, selectedLocation, dateRange, useApiData])
+
+  // Show loading state when using API
+  if (useApiData && apiLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading rainfall analytics...</span>
+      </div>
+    )
+  }
+
+  // Show error state when using API
+  if (useApiData && apiError) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <div className="text-red-500 mb-2">Failed to load rainfall data</div>
+          <div className="text-sm text-muted-foreground">{apiError.message}</div>
+        </div>
+      </div>
+    )
+  }
 
   const overallStats = React.useMemo(() => 
     getOverallRainfallStats(filteredData), [filteredData]

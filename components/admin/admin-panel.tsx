@@ -11,11 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Upload, Plus, FileSpreadsheet } from "lucide-react"
+import { CalendarIcon, Upload, Plus, FileSpreadsheet, Database } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import { toast } from "sonner"
 import { LocationManagement } from "@/components/admin/location-management"
+import { RainfallDataEntryForm } from "@/components/admin/rainfall-data-entry"
 
 interface Location {
   id: string;
@@ -25,6 +26,27 @@ interface Location {
 }
 
 export function AdminPanel() {
+  return (
+    <div className="space-y-6">
+      {/* Database-powered Rainfall Data Entry */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Database className="h-5 w-5" />
+          Input Data Curah Hujan (Database)
+        </h3>
+        <RainfallDataEntryForm />
+      </div>
+      
+      {/* Location Management */}
+      <LocationManagement />
+      
+      {/* Legacy Form (kept for reference) */}
+      <LegacyDataEntryForm />
+    </div>
+  )
+}
+
+function LegacyDataEntryForm() {
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [rainfall, setRainfall] = useState("")
   const [location, setLocation] = useState("")
