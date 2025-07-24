@@ -1,24 +1,112 @@
 "use client"
 
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Download } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Download, ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { exportRainfallPivotToExcel } from "@/lib/utils/excel-export"
+import { useRainfallData, useRainfallMutations } from "@/lib/hooks"
+import { useAuth } from "@/lib/hooks/useAuth"
+import { FilterControls } from "@/components/forms/filter-controls"
 
 interface DataTableProps {
-  data: Array<{
-    date: string
-    rainfall: number
-    location: string
-  }>
+  filters?: {
+    location?: string
+    dateRange?: { from: Date; to: Date }
+  }
+  onFilterChange?: (newFilters: {
+    location: string;
+    dateRange?: { from: Date; to: Date };
+  }) => void
 }
 
-export function DataTable({ data }: DataTableProps) {
+export function DataTable({ filters, onFilterChange }: DataTableProps) {
+  // State untuk pagination dan sorting
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [sortBy, setSortBy] = useState('date')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+
+  // API data fetching
+  const apiFilters = useMemo(() => {
+    const filters_obj = {
+      location: filters?.location && filters.location !== 'all' ? filters.location : undefined,
+      startDate: filters?.dateRange?.from?.toISOString().split('T')[0],
+      endDate: filters?.dateRange?.to?.toISOString().split('T')[0],
+      page: currentPage,
+      limit: pageSize,
+      sortBy,
+      order: sortOrder
+    }
+    
+    // Remove undefined values
+    const cleanFilters = Object.fromEntries(
+      Object.entries(filters_obj).filter(([_, v]) => v !== undefined)
+    )
+    
+    console.log('DataTable API Filters:', cleanFilters)
+    console.log('Original filters from props:', filters)
+    
+    return cleanFilters
+  }, [filters, currentPage, pageSize, sortBy, sortOrder])
+
+  const { 
+    data: apiResponse, 
+    error: apiError, 
+    isLoading: apiLoading,
+    mutate: refreshData
+  } = useRainfallData(apiFilters)
+
+  // Debug logging
+  console.log('API Response:', apiResponse)
+  console.log('API Error:', apiError)
+  console.log('API Loading:', apiLoading)
+
+  const { deleteRainfallData, isDeleting } = useRainfallMutations()
+  
+  // Check user authentication and role
+  const { user, isAuthenticated } = useAuth()
+  const isAdmin = isAuthenticated && user?.role === 'ADMIN'
+
+  // Transform API data
+  const tableData = useMemo(() => {
+    if (apiResponse?.data) {
+      return apiResponse.data.map(item => ({
+        id: item.id,
+        date: item.date,
+        rainfall: item.rainfall,
+        location: item.location.name,
+        locationCode: item.location.code,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
+      }))
+    }
+    return []
+  }, [apiResponse])
+
+  // Pagination info
+  const pagination = apiResponse?.pagination || {
+    page: 1,
+    limit: 0,
+    total: 0,
+    totalPages: 1,
+    hasNext: false,
+    hasPrev: false
+  }
+
+  // Export function
   const exportToExcel = async () => {
     try {
-      await exportRainfallPivotToExcel(data)
+      const exportData = tableData.map(row => ({
+        date: row.date,
+        rainfall: row.rainfall,
+        location: row.location
+      }))
+
+      await exportRainfallPivotToExcel(exportData)
       toast.success("Data berhasil diekspor ke Excel")
     } catch (error) {
       console.error("Export error:", error)
@@ -26,49 +114,234 @@ export function DataTable({ data }: DataTableProps) {
     }
   }
 
+  // Delete function (only for API mode)
+  const handleDelete = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return
+    
+    try {
+      await deleteRainfallData(id)
+      await refreshData() // Refresh table data
+    } catch (error) {
+      // Error already handled in hook
+    }
+  }
+
+  // Pagination handlers
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage)
+  }
+
+  const handlePageSizeChange = (newSize: string) => {
+    setPageSize(parseInt(newSize))
+    setCurrentPage(1)
+  }
+
+  const handleSortChange = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(column)
+      setSortOrder('desc')
+    }
+    setCurrentPage(1)
+  }
+
   return (
-    <Card>
+    <div className="space-y-6">
+      {/* Filter Controls */}
+      {onFilterChange && <FilterControls onFilterChange={onFilterChange} />}
+      
+      {/* Data Table */}
+      <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>Tabel Data Curah Hujan</CardTitle>
+          <div className="flex flex-col">
+            <CardTitle>Data Curah Hujan (Real-time)</CardTitle>
+            {filters && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {filters.location && filters.location !== 'all' && `Lokasi: ${filters.location} • `}
+                {filters.dateRange && `${filters.dateRange.from.toLocaleDateString('id-ID')} - ${filters.dateRange.to.toLocaleDateString('id-ID')}`}
+              </p>
+            )}
+          </div>
           <Button onClick={exportToExcel} className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             Export Excel
           </Button>
         </div>
+        
+        {/* Controls */}
+        <div className="flex flex-col sm:flex-row gap-4 mt-4">
+          {/* Page size selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Tampilkan:</span>
+            <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Status indicators */}
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          {apiLoading && <span>Memuat data...</span>}
+          {apiError && <span className="text-destructive">Error: {apiError.message}</span>}
+          {!apiLoading && !apiError && (
+            <span>
+              Menampilkan {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total} data
+            </span>
+          )}
+          {isAuthenticated && (
+            <span className="text-xs">
+              • Login sebagai: <span className={`font-medium ${isAdmin ? 'text-red-600' : 'text-blue-600'}`}>
+                {user?.role}
+              </span>
+              {!isAdmin && ' (Read-only)'}
+            </span>
+          )}
+        </div>
       </CardHeader>
+
       <CardContent>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tanggal</TableHead>
-                <TableHead>Curah Hujan (mm)</TableHead>
-                <TableHead>Lokasi</TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleSortChange('date')}
+                >
+                  Tanggal
+                  {sortBy === 'date' && (
+                    <span className="ml-1">
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleSortChange('rainfall')}
+                >
+                  Curah Hujan (mm)
+                  {sortBy === 'rainfall' && (
+                    <span className="ml-1">
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleSortChange('location')}
+                >
+                  Lokasi
+                  {sortBy === 'location' && (
+                    <span className="ml-1">
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </TableHead>
+                {isAdmin && <TableHead>Aksi</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((row, index) => (
-                <TableRow key={index}>
-                  <TableCell>
-                    {new Date(row.date).toLocaleDateString("id-ID", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </TableCell>
-                  <TableCell className="font-medium">{row.rainfall}</TableCell>
-                  <TableCell>{row.location}</TableCell>
-                </TableRow>
-              ))}
+              {tableData.map((row, index) => {
+                return (
+                  <TableRow key={row.id}>
+                    <TableCell>
+                      {new Date(row.date).toLocaleDateString("id-ID", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </TableCell>
+                    <TableCell className="font-medium">{row.rainfall}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span>{row.location}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {row.locationCode}
+                        </span>
+                      </div>
+                    </TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(row.id)}
+                            disabled={isDeleting}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </div>
 
-        {data.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">Tidak ada data yang ditemukan</div>
+        {/* No data message */}
+        {tableData.length === 0 && !apiLoading && (
+          <div className="text-center py-8 text-muted-foreground">
+            Tidak ada data yang ditemukan dengan filter yang dipilih
+          </div>
+        )}
+
+        {/* Loading skeleton */}
+        {apiLoading && (
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center space-x-4">
+                <div className="h-4 bg-muted animate-pulse rounded w-1/4"></div>
+                <div className="h-4 bg-muted animate-pulse rounded w-1/6"></div>
+                <div className="h-4 bg-muted animate-pulse rounded w-1/4"></div>
+                {isAdmin && <div className="h-4 bg-muted animate-pulse rounded w-16"></div>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-muted-foreground">
+              Halaman {pagination.page} dari {pagination.totalPages}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={!pagination.hasPrev || apiLoading}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Sebelumnya
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={!pagination.hasNext || apiLoading}
+              >
+                Selanjutnya
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
+    </div>
   )
 }

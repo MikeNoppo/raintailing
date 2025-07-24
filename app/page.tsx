@@ -74,8 +74,10 @@ function DashboardContent() {
 
         {activeTab === TAB_IDS.DATA && (
           <div className="space-y-6">
-            <FilterControls onFilterChange={handleFilterChange} />
-            <DataTable data={filteredData} />
+            <DataTable 
+              filters={filters}
+              onFilterChange={handleFilterChange}
+            />
           </div>
         )}
 
