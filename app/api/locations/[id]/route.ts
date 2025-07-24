@@ -55,8 +55,8 @@ export async function GET(
   }
 }
 
-// PUT /api/locations/[id] - Update location
-export async function PUT(
+// PATCH /api/locations/[id] - Update location
+export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {

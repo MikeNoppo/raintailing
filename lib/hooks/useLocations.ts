@@ -179,7 +179,7 @@ export function useLocationMutations() {
 
     try {
       const response = await fetch(`/api/locations/${id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
