@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { LocationStatus } from '@prisma/client'
 
-// PATCH /api/locations/[id]/status - Toggle location status
+// PATCH /api/locations/[id]/status - Toggle location status (ADMIN ONLY)
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -15,9 +15,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check permissions
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'OPERATOR') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Only ADMIN can change location status
+    if (session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
     }
 
     const { id } = await context.params

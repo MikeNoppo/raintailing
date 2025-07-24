@@ -4,14 +4,10 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { LocationStatus } from '@prisma/client'
 
-// GET /api/locations - Get all locations
+// GET /api/locations - Get all locations (PUBLIC ACCESS)
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+    // Make GET public - no authentication required
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') as LocationStatus | null
     const includeInactive = searchParams.get('includeInactive') === 'true'
@@ -49,7 +45,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/locations - Create new location
+// POST /api/locations - Create new location (ADMIN ONLY)
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -57,9 +53,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user has permission to create locations
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'OPERATOR') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Only ADMIN can create locations
+    if (session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
     }
 
     const body = await request.json()

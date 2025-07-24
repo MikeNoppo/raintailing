@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+// POST /api/rainfall/bulk - Bulk create rainfall data (ADMIN ONLY)
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -10,15 +11,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user has permission (ADMIN or OPERATOR)
+    // Only ADMIN can bulk create rainfall data
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { role: true }
     })
 
-    if (!user || !['ADMIN', 'OPERATOR'].includes(user.role)) {
+    if (!user || user.role !== 'ADMIN') {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'Forbidden - Admin access required' },
         { status: 403 }
       )
     }

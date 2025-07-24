@@ -4,17 +4,13 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { LocationStatus } from '@prisma/client'
 
-// GET /api/locations/[id] - Get specific location
+// GET /api/locations/[id] - Get specific location (PUBLIC ACCESS)
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+    // Make GET public - no authentication required
     const { id } = await context.params
 
     const location = await prisma.location.findUnique({
@@ -55,7 +51,7 @@ export async function GET(
   }
 }
 
-// PATCH /api/locations/[id] - Update location
+// PATCH /api/locations/[id] - Update location (ADMIN ONLY)
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -66,9 +62,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check permissions
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'OPERATOR') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Only ADMIN can update locations
+    if (session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
     }
 
     const { id } = await context.params

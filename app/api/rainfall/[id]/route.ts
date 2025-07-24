@@ -9,16 +9,13 @@ interface RouteParams {
   }
 }
 
+// GET /api/rainfall/[id] - Get specific rainfall data (PUBLIC ACCESS)
 export async function GET(
   request: NextRequest,
   { params }: RouteParams
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+    // Make GET public - no authentication required
     const { id } = params
 
     const rainfallData = await prisma.rainfallData.findUnique({
@@ -60,6 +57,7 @@ export async function GET(
   }
 }
 
+// PUT /api/rainfall/[id] - Update rainfall data (ADMIN ONLY)
 export async function PUT(
   request: NextRequest,
   { params }: RouteParams
@@ -70,15 +68,15 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user has permission (ADMIN or OPERATOR)
+    // Only ADMIN can update rainfall data
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { role: true }
     })
 
-    if (!user || !['ADMIN', 'OPERATOR'].includes(user.role)) {
+    if (!user || user.role !== 'ADMIN') {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'Forbidden - Admin access required' },
         { status: 403 }
       )
     }
@@ -193,6 +191,7 @@ export async function PUT(
   }
 }
 
+// DELETE /api/rainfall/[id] - Delete rainfall data (ADMIN ONLY)
 export async function DELETE(
   request: NextRequest,
   { params }: RouteParams
@@ -203,15 +202,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user has permission (ADMIN or OPERATOR)
+    // Only ADMIN can delete rainfall data
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { role: true }
     })
 
-    if (!user || !['ADMIN', 'OPERATOR'].includes(user.role)) {
+    if (!user || user.role !== 'ADMIN') {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'Forbidden - Admin access required' },
         { status: 403 }
       )
     }
