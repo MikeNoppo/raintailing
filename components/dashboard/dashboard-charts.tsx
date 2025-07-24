@@ -107,11 +107,13 @@ export function DashboardCharts({
           showAsDonut={false}
           title="Klasifikasi Curah Hujan"
           description={useApiData ? "Proporsi kategori dari database" : "Proporsi kategori curah hujan (Pie Chart)"}
+          useApiData={useApiData}
         />
         
         <RainfallClassificationSummary 
           location={filters.location !== "all" ? filters.location : undefined}
           dateRange={dateRange}
+          useApiData={useApiData}
         />
       </div>
     </>

@@ -10,13 +10,13 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-import { dailyData } from "@/lib/data/rainfall-data"
+import { useRainfallClassification } from "@/lib/hooks"
 
 // Rainfall classification based on Indonesian meteorological standards
 export const rainfallCategories = {
   ringan: {
     label: "Hujan Ringan",
-    description: "0.1 - 5 mm per jam atau 0.1 - 20 mm per hari",
+    description: "0.1 - 20 mm per hari",
     min: 0.1,
     max: 20,
     color: "#22c55e", // green
@@ -57,7 +57,7 @@ export const classifyRainfall = (amount: number): keyof typeof rainfallCategorie
 }
 
 // Function to process rainfall data and get classification counts
-export const processRainfallClassification = (data: typeof dailyData, location?: string) => {
+export const processRainfallClassification = (data: Array<{ rainfall: number, location?: string }>, location?: string) => {
   // Filter by location if specified
   const filteredData = location 
     ? data.filter(item => item.location === location)
@@ -114,6 +114,7 @@ interface RainfallClassificationChartProps {
   showAsDonut?: boolean
   title?: string
   description?: string
+  useApiData?: boolean // New prop to enable API data
 }
 
 export function RainfallClassificationChart({ 
@@ -121,24 +122,80 @@ export function RainfallClassificationChart({
   dateRange,
   showAsDonut = true,
   title = "Klasifikasi Curah Hujan",
-  description = "Proporsi kategori curah hujan berdasarkan data harian"
+  description = "Proporsi kategori curah hujan berdasarkan data harian",
+  useApiData = true // Default to true for API integration
 }: RainfallClassificationChartProps) {
-  const chartData = React.useMemo(() => {
-    let filteredData = dailyData
+  // Use API data when enabled
+  const { 
+    chartData: apiChartData, 
+    summary, 
+    isLoading, 
+    error, 
+    isEmpty 
+  } = useRainfallClassification({
+    location: location === 'all' ? undefined : location,
+    startDate: dateRange?.start,
+    endDate: dateRange?.end
+  })
 
-    // Filter by date range if provided
-    if (dateRange) {
-      filteredData = filteredData.filter(item => 
-        item.date >= dateRange.start && item.date <= dateRange.end
-      )
-    }
+  // Loading state
+  if (useApiData && isLoading) {
+    return (
+      <Card className="flex flex-col">
+        <CardHeader className="items-center pb-0">
+          <div className="h-6 w-48 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-64 bg-muted rounded animate-pulse mt-2" />
+        </CardHeader>
+        <CardContent className="flex-1 pb-0">
+          <div className="mx-auto aspect-square max-h-[300px] bg-muted rounded animate-pulse" />
+        </CardContent>
+      </Card>
+    )
+  }
 
-    return processRainfallClassification(filteredData, location)
-  }, [location, dateRange])
+  // Error state
+  if (useApiData && error) {
+    return (
+      <Card className="flex flex-col">
+        <CardHeader className="items-center pb-0">
+          <CardTitle className="text-destructive">Error</CardTitle>
+          <CardDescription>
+            Failed to load classification data
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex-1 pb-0 flex items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <p>Unable to fetch rainfall classification data</p>
+            <p className="text-sm mt-1">Please try again later</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
-  const totalDays = React.useMemo(() => {
-    return chartData.reduce((sum, item) => sum + item.value, 0)
-  }, [chartData])
+  // Empty state
+  if (useApiData && isEmpty) {
+    return (
+      <Card className="flex flex-col">
+        <CardHeader className="items-center pb-0">
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>
+            {description}
+            {location && location !== 'all' && ` - ${location}`}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex-1 pb-0 flex items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <p>No rainfall data available</p>
+            <p className="text-sm mt-1">for the selected period</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const chartData = useApiData ? apiChartData : []
+  const totalDays = useApiData ? (summary?.totalDays || 0) : 0
 
   return (
     <Card className="flex flex-col">
@@ -146,7 +203,7 @@ export function RainfallClassificationChart({
         <CardTitle>{title}</CardTitle>
         <CardDescription>
           {description}
-          {location && ` - ${location}`}
+          {location && location !== 'all' && ` - ${location}`}
           {totalDays > 0 && ` (${totalDays} hari)`}
         </CardDescription>
       </CardHeader>
@@ -225,24 +282,84 @@ export function RainfallClassificationChart({
 // Helper component for showing classification summary
 export function RainfallClassificationSummary({ 
   location,
-  dateRange 
+  dateRange,
+  useApiData = true
 }: { 
   location?: string
   dateRange?: { start: string, end: string }
+  useApiData?: boolean
 }) {
-  const chartData = React.useMemo(() => {
-    let filteredData = dailyData
+  // Use API data when enabled
+  const { 
+    chartData: apiChartData, 
+    summary, 
+    isLoading, 
+    error, 
+    isEmpty 
+  } = useRainfallClassification({
+    location: location === 'all' ? undefined : location,
+    startDate: dateRange?.start,
+    endDate: dateRange?.end
+  })
 
-    if (dateRange) {
-      filteredData = filteredData.filter(item => 
-        item.date >= dateRange.start && item.date <= dateRange.end
-      )
-    }
+  // Loading state
+  if (useApiData && isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="h-6 w-48 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-64 bg-muted rounded animate-pulse mt-2" />
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-16 bg-muted rounded animate-pulse" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
-    return processRainfallClassification(filteredData, location)
-  }, [location, dateRange])
+  // Error state
+  if (useApiData && error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-destructive">Error</CardTitle>
+          <CardDescription>Failed to load classification data</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center text-muted-foreground">
+            <p>Unable to fetch rainfall classification data</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
-  const totalDays = chartData.reduce((sum, item) => sum + item.value, 0)
+  // Empty state
+  if (useApiData && isEmpty) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Ringkasan Klasifikasi</CardTitle>
+          <CardDescription>
+            Distribusi kategori curah hujan
+            {location && location !== 'all' && ` untuk ${location}`}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center text-muted-foreground">
+            <p>No rainfall data available for classification</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const chartData = useApiData ? apiChartData : []
+  const totalDays = useApiData ? (summary?.totalDays || 0) : 0
 
   return (
     <Card>
@@ -250,7 +367,7 @@ export function RainfallClassificationSummary({
         <CardTitle className="text-lg">Ringkasan Klasifikasi</CardTitle>
         <CardDescription>
           Distribusi kategori curah hujan
-          {location && ` untuk ${location}`}
+          {location && location !== 'all' && ` untuk ${location}`}
         </CardDescription>
       </CardHeader>
       <CardContent>
