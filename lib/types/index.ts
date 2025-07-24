@@ -15,13 +15,21 @@ export interface Location {
   id: string
   name: string
   code: string
-  description?: string
+  description?: string | null
+  latitude?: number | null
+  longitude?: number | null
   coordinates?: {
     lat: number
     lng: number
   }
-  status: 'active' | 'inactive'
-  createdAt: Date
+  status: 'active' | 'inactive' | 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE'
+  createdAt: Date | string
+  updatedAt?: Date | string
+  _count?: {
+    rainfallData?: number
+    monthlyAggregates?: number
+    thresholds?: number
+  }
 }
 
 export interface DateRange {
