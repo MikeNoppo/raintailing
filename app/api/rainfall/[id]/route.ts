@@ -4,9 +4,9 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 // GET /api/rainfall/[id] - Get specific rainfall data (PUBLIC ACCESS)
@@ -16,7 +16,7 @@ export async function GET(
 ) {
   try {
     // Make GET public - no authentication required
-    const { id } = params
+    const { id } = await params
 
     const rainfallData = await prisma.rainfallData.findUnique({
       where: { id },
@@ -81,7 +81,7 @@ export async function PUT(
       )
     }
 
-    const { id } = params
+    const { id } = await params
     const { date, rainfall, locationId, notes } = await request.json()
 
     // Check if rainfall data exists
@@ -215,7 +215,7 @@ export async function DELETE(
       )
     }
 
-    const { id } = params
+    const { id } = await params
 
     // Check if rainfall data exists
     const existingData = await prisma.rainfallData.findUnique({

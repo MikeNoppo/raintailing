@@ -1,13 +1,16 @@
 import { LoginForm } from "@/components/auth/login-form"
 import Image from "next/image"
+import { Suspense } from "react"
 
-export default function LoginPage() {
+function LoginContent() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Login Form */}
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md">
-          <LoginForm />
+          <Suspense fallback={<div className="text-center">Loading...</div>}>
+            <LoginForm />
+          </Suspense>
         </div>
       </div>
       
@@ -24,4 +27,8 @@ export default function LoginPage() {
       </div>
     </div>
   )
+}
+
+export default function LoginPage() {
+  return <LoginContent />
 }
