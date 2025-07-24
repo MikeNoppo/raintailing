@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       total: bulkData.length,
       success: 0,
       failed: 0,
-      errors: [] as Array<{ index: number; error: string; data: any }>
+      errors: [] as Array<{ index: number; error: string; data: unknown }>
     }
 
     // Get all locations for validation

@@ -17,7 +17,13 @@ export async function GET(request: NextRequest) {
     const order = searchParams.get('order') || 'desc'
 
     // Build where clause
-    const where: any = {}
+    const where: {
+      location?: { code: string }
+      date?: { 
+        gte?: Date
+        lte?: Date 
+      }
+    } = {}
     
     if (location && location !== 'all') {
       where.location = { code: location }
