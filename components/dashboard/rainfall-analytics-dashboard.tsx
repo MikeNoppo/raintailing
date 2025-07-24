@@ -55,7 +55,9 @@ export function RainfallAnalyticsDashboard({
   }, [useApiData, apiData])
 
   // Use API data if available, otherwise fall back to prop data
-  const dataSource = useApiData ? (transformedApiData || []) : data
+  const dataSource = React.useMemo(() => {
+    return useApiData ? (transformedApiData || []) : data
+  }, [useApiData, transformedApiData, data])
 
   const filteredData = React.useMemo(() => {
     let result = dataSource
@@ -72,6 +74,18 @@ export function RainfallAnalyticsDashboard({
 
     return result
   }, [dataSource, selectedLocation, dateRange, useApiData])
+
+  const overallStats = React.useMemo(() => 
+    getOverallRainfallStats(filteredData), [filteredData]
+  )
+
+  const locationStats = React.useMemo(() => 
+    getRainfallStatsByLocation(filteredData), [filteredData]
+  )
+
+  const dominantCategory = React.useMemo(() => 
+    getDominantCategory(overallStats.categories), [overallStats.categories]
+  )
 
   // Show loading state when using API
   if (useApiData && apiLoading) {
@@ -94,18 +108,6 @@ export function RainfallAnalyticsDashboard({
       </div>
     )
   }
-
-  const overallStats = React.useMemo(() => 
-    getOverallRainfallStats(filteredData), [filteredData]
-  )
-
-  const locationStats = React.useMemo(() => 
-    getRainfallStatsByLocation(filteredData), [filteredData]
-  )
-
-  const dominantCategory = React.useMemo(() => 
-    getDominantCategory(overallStats.categories), [overallStats.categories]
-  )
 
   const getCategoryIcon = (category: RainfallCategory) => {
     return rainfallCategories[category].emoji

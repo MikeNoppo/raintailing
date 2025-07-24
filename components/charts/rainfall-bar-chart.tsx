@@ -5,11 +5,8 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 import { Loader2 } from "lucide-react"
 import { useRainfallData } from "@/lib/hooks"
 import { 
-  transformRainfallDataForCharts,
-  calculateTotalRainfallByLocation,
-  calculateMonthlyAggregates 
+  transformRainfallDataForCharts
 } from "@/lib/utils/data-transformers"
-import type { RainfallData } from "@/lib/types"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 

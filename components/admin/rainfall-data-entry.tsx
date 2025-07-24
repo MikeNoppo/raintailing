@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Calendar, Droplets, MapPin } from "lucide-react"
 import { useLocations, useRainfallMutations } from "@/lib/hooks"
-import { toast } from "sonner"
 import type { Location } from "@/lib/types"
 
 export function RainfallDataEntryForm() {

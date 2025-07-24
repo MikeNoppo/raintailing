@@ -15,7 +15,6 @@ import {
 import { Loader2 } from "lucide-react"
 import { useRainfallData } from "@/lib/hooks"
 import { transformRainfallDataForCharts } from "@/lib/utils/data-transformers"
-import type { RainfallData } from "@/lib/types"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
 
