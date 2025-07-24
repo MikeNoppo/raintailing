@@ -44,7 +44,7 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
     
     // Remove undefined values
     const cleanFilters = Object.fromEntries(
-      Object.entries(filters_obj).filter(([_, v]) => v !== undefined)
+      Object.entries(filters_obj).filter(([v]) => v !== undefined)
     )
     
     console.log('DataTable API Filters:', cleanFilters)
@@ -121,7 +121,7 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
     try {
       await deleteRainfallData(id)
       await refreshData() // Refresh table data
-    } catch (error) {
+    } catch {
       // Error already handled in hook
     }
   }
@@ -251,7 +251,7 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tableData.map((row, index) => {
+              {tableData.map((row) => {
                 return (
                   <TableRow key={row.id}>
                     <TableCell>

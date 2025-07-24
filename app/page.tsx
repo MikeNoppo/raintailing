@@ -3,21 +3,21 @@
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { DataTable } from "@/components/forms/data-table"
-import { FilterControls } from "@/components/forms/filter-controls"
 import { AdminPanel } from "@/components/admin/admin-panel"
 import { Header } from "@/components/layout/header"
 import { DashboardStats } from "@/components/dashboard/dashboard-stats"
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts"
-import { dailyData } from "@/lib/data/rainfall-data"
 import { useAuth } from "@/lib/hooks/useAuth"
-import { useDataFilter } from "@/lib/hooks/useDataFilter"
 import { TAB_IDS, DASHBOARD_CONFIG } from "@/lib/constants/dashboard"
 
 function DashboardContent() {
   const [activeTab, setActiveTab] = useState<string>(DASHBOARD_CONFIG.DEFAULT_TAB)
+  const [filters, setFilters] = useState({
+    location: "all",
+    dateRange: undefined as { from: Date; to: Date } | undefined
+  })
   const searchParams = useSearchParams()
   const { isAuthenticated, logout, requireAuth } = useAuth()
-  const { filters, filteredData, updateFilters } = useDataFilter(dailyData)
 
   useEffect(() => {
     // Check if redirected from login with admin tab
@@ -40,7 +40,10 @@ function DashboardContent() {
     location: string;
     dateRange?: { from: Date; to: Date };
   }) => {
-    updateFilters(newFilters)
+    setFilters({
+      location: newFilters.location,
+      dateRange: newFilters.dateRange
+    })
   }
 
   return (
@@ -58,13 +61,12 @@ function DashboardContent() {
           <div className="space-y-6">
             {/* Summary Cards */}
             <DashboardStats 
-              data={dailyData} 
               selectedLocation={filters.location}
+              useApiData={true}
             />
 
             {/* Charts */}
             <DashboardCharts 
-              filteredData={filteredData}
               filters={filters}
               onFilterChange={handleFilterChange}
               useApiData={true}

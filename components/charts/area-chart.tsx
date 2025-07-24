@@ -11,6 +11,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
+import { Loader2 } from "lucide-react"
+import { useRainfallData } from "@/lib/hooks"
+import { useLocations } from "@/lib/hooks/useLocations"
 
 // Default locations based on location-management.tsx
 const defaultLocations: Location[] = [
@@ -70,51 +73,57 @@ interface RainfallAreaChartProps {
   }>
   filteredLocation?: string
   dateRange?: { from: Date; to: Date }
+  useApiData?: boolean
 }
 
-export function AreaChart({ data: propData, filteredLocation = "all", dateRange }: RainfallAreaChartProps) {
-  const [locations, setLocations] = React.useState<Location[]>(defaultLocations)
+export function AreaChart({ 
+  data: propData, 
+  filteredLocation = "all", 
+  dateRange,
+  useApiData = false 
+}: RainfallAreaChartProps) {
+  // Fetch locations from API - ALWAYS call this hook
+  const { locations: apiLocations, loading: locationsLoading } = useLocations({ 
+    status: 'ACTIVE', 
+    autoRefresh: true, 
+    refreshInterval: 60000 
+  })
 
-  // Load locations from localStorage
-  React.useEffect(() => {
-    const savedLocations = localStorage.getItem('rainfall-locations')
-    if (savedLocations) {
-      try {
-        const parsed = JSON.parse(savedLocations)
-        const activeLocations = parsed.filter((loc: Location) => loc.status === 'active')
-        setLocations(activeLocations)
-      } catch (error) {
-        console.error('Error loading locations:', error)
-        setLocations(defaultLocations)
-      }
-    }
+  // Fetch rainfall data from API if useApiData is true - ALWAYS call this hook
+  const { 
+    data: apiData, 
+    error: apiError, 
+    isLoading: apiLoading 
+  } = useRainfallData(
+    useApiData ? {
+      location: filteredLocation !== "all" ? filteredLocation : undefined,
+      startDate: dateRange?.from?.toISOString().split('T')[0],
+      endDate: dateRange?.to?.toISOString().split('T')[0],
+      limit: 500, // Increase limit for chart data
+      sortBy: 'date',
+      order: 'asc'
+    } : undefined
+  )
 
-    // Listen for location updates
-    const handleLocationUpdate = () => {
-      const savedLocations = localStorage.getItem('rainfall-locations')
-      if (savedLocations) {
-        try {
-          const parsed = JSON.parse(savedLocations)
-          const activeLocations = parsed.filter((loc: Location) => loc.status === 'active')
-          setLocations(activeLocations)
-        } catch (error) {
-          console.error('Error loading locations:', error)
-        }
-      }
-    }
+  // Use API data if available, otherwise fallback to prop data or default locations
+  const dataSource = useApiData && apiData?.data 
+    ? apiData.data.map(item => ({
+        date: item.date,
+        rainfall: item.rainfall,
+        location: item.location.code
+      }))
+    : propData
 
-    window.addEventListener('locationsUpdated', handleLocationUpdate)
-    return () => window.removeEventListener('locationsUpdated', handleLocationUpdate)
-  }, [])
+  const locations = useApiData ? (apiLocations || defaultLocations) : defaultLocations
 
-  // Convert propData to chart format or generate data
+  // Convert dataSource to chart format or generate data - ALWAYS call this hook
   const chartDataWithLocations = React.useMemo(() => {
-    if (propData && propData.length > 0) {
-      // Convert the prop data to chart format
+    if (dataSource && dataSource.length > 0) {
+      // Convert the API/prop data to chart format
       const dataMap = new Map()
       
       // Group data by date
-      propData.forEach(item => {
+      dataSource.forEach(item => {
         if (!dataMap.has(item.date)) {
           dataMap.set(item.date, { date: item.date })
         }
@@ -125,8 +134,8 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
       return Array.from(dataMap.values()).sort((a, b) => 
         new Date(a.date).getTime() - new Date(b.date).getTime()
       )
-    } else {
-      // Fallback to generated data if no propData
+    } else if (!useApiData) {
+      // Fallback to generated data only if not using API data
       const data = []
       const startDate = new Date("2024-04-01")
 
@@ -149,9 +158,11 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
 
       return data
     }
-  }, [locations, propData])
+    
+    return []
+  }, [locations, dataSource, useApiData])
 
-  // Filter locations based on filter controls
+  // Filter locations based on filter controls - ALWAYS call this hook
   const displayedLocations = React.useMemo(() => {
     if (filteredLocation === "all") {
       return locations
@@ -159,7 +170,7 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
     return locations.filter(location => location.code === filteredLocation)
   }, [locations, filteredLocation])
 
-  // Fill missing data and filter chart data
+  // Filter chart data - ALWAYS call this hook
   const filteredData = React.useMemo(() => {
     const filtered = chartDataWithLocations.filter((item) => {
       const date = new Date(item.date)
@@ -169,8 +180,8 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
         return date >= dateRange.from && date <= dateRange.to
       }
       
-      // If using propData, don't apply default date filter
-      if (propData && propData.length > 0) {
+      // If using API data or prop data, don't apply default date filter
+      if (dataSource && dataSource.length > 0) {
         return true
       }
       
@@ -191,9 +202,9 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
       })
       return filledItem
     })
-  }, [chartDataWithLocations, dateRange, propData, displayedLocations])
+  }, [chartDataWithLocations, dateRange, dataSource, displayedLocations])
 
-  // Generate dynamic chart config based on displayed locations
+  // Generate dynamic chart config based on displayed locations - ALWAYS call this hook
   const dynamicChartConfig = React.useMemo(() => {
     const config: ChartConfig = {}
     displayedLocations.forEach((location) => {
@@ -205,6 +216,39 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
     return config
   }, [displayedLocations])
 
+  // Loading state for API data
+  if (useApiData && (apiLoading || locationsLoading)) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Intensitas dan Akumulasi Hujan</CardTitle>
+          <CardDescription>Loading data from database...</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[300px]">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Error state for API data
+  if (useApiData && apiError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Intensitas dan Akumulasi Hujan</CardTitle>
+          <CardDescription>Error loading data from database</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[300px] text-muted-foreground">
+          <div className="text-center">
+            <p className="text-lg font-medium">Failed to load data</p>
+            <p className="text-sm">Please try again later</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
@@ -213,7 +257,7 @@ export function AreaChart({ data: propData, filteredLocation = "all", dateRange 
           <CardDescription>
             {filteredLocation !== "all" 
               ? `Data curah hujan untuk ${displayedLocations[0]?.name || filteredLocation}`
-              : `Perbandingan curah hujan antar ${displayedLocations.length} stasiun ${propData && propData.length > 0 ? 'berdasarkan data real' : 'dalam periode waktu'}`
+              : `Perbandingan curah hujan antar ${displayedLocations.length} stasiun ${useApiData ? 'dari database real-time' : (dataSource && dataSource.length > 0 ? 'berdasarkan data real' : 'dalam periode waktu')}`
             }
           </CardDescription>
         </div>

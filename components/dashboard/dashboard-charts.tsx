@@ -6,11 +6,8 @@ import { RainfallBarChart } from "@/components/charts/rainfall-bar-chart"
 import { RainfallClassificationChart, RainfallClassificationSummary } from "@/components/charts/rainfall-classification-chart"
 import { AreaChart } from "@/components/charts/area-chart"
 import { FilterControls } from "@/components/forms/filter-controls"
-import { dailyData } from "@/lib/data/rainfall-data"
-import type { RainfallData } from "@/lib/types"
 
 interface DashboardChartsProps {
-  filteredData: RainfallData[]
   filters: {
     location: string
     dateRange?: { from: Date; to: Date }
@@ -23,7 +20,6 @@ interface DashboardChartsProps {
 }
 
 export function DashboardCharts({ 
-  filteredData, 
   filters, 
   onFilterChange,
   useApiData = false
@@ -40,9 +36,9 @@ export function DashboardCharts({
 
       {/* Area Chart */}
       <AreaChart 
-        data={filteredData} 
         filteredLocation={filters.location}
         dateRange={filters.dateRange}
+        useApiData={useApiData}
       />
 
       {/* Charts Grid */}
@@ -57,13 +53,12 @@ export function DashboardCharts({
           <CardContent>
             {useApiData ? (
               <RainfallChart 
-                data={filteredData}
                 selectedLocation={filters.location !== "all" ? filters.location : undefined}
                 dateRange={dateRange}
                 useApiData={true}
               />
             ) : (
-              <RainfallChart data={filteredData} />
+              <RainfallChart />
             )}
           </CardContent>
         </Card>
@@ -88,7 +83,6 @@ export function DashboardCharts({
           <CardContent>
             {useApiData ? (
               <RainfallBarChart 
-                data={filteredData}
                 selectedLocation={filters.location !== "all" ? filters.location : undefined}
                 dateRange={dateRange}
                 useApiData={true}
@@ -96,7 +90,6 @@ export function DashboardCharts({
               />
             ) : (
               <RainfallBarChart 
-                data={dailyData}
                 type="monthly-location-total"
                 selectedLocation={filters.location !== "all" ? filters.location : undefined}
                 dateRange={dateRange}
