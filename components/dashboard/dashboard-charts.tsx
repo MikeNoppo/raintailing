@@ -5,7 +5,6 @@ import { RainfallChart } from "@/components/charts/rainfall-chart"
 import { RainfallBarChart } from "@/components/charts/rainfall-bar-chart"
 import { RainfallClassificationChart, RainfallClassificationSummary } from "@/components/charts/rainfall-classification-chart"
 import { AreaChart } from "@/components/charts/area-chart"
-import { EnhancedRainfallChart, EnhancedRainfallBarChart } from "@/components/charts"
 import { FilterControls } from "@/components/forms/filter-controls"
 import { dailyData } from "@/lib/data/rainfall-data"
 import type { RainfallData } from "@/lib/types"
@@ -57,7 +56,7 @@ export function DashboardCharts({
           </CardHeader>
           <CardContent>
             {useApiData ? (
-              <EnhancedRainfallChart 
+              <RainfallChart 
                 data={filteredData}
                 selectedLocation={filters.location !== "all" ? filters.location : undefined}
                 dateRange={dateRange}
@@ -88,7 +87,7 @@ export function DashboardCharts({
           </CardHeader>
           <CardContent>
             {useApiData ? (
-              <EnhancedRainfallBarChart 
+              <RainfallBarChart 
                 data={filteredData}
                 selectedLocation={filters.location !== "all" ? filters.location : undefined}
                 dateRange={dateRange}

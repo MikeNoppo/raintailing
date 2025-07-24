@@ -2,6 +2,14 @@
 
 import { Bar } from "react-chartjs-2"
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js"
+import { Loader2 } from "lucide-react"
+import { useRainfallData } from "@/lib/hooks"
+import { 
+  transformRainfallDataForCharts,
+  calculateTotalRainfallByLocation,
+  calculateMonthlyAggregates 
+} from "@/lib/utils/data-transformers"
+import type { RainfallData } from "@/lib/types"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
@@ -13,7 +21,7 @@ interface AggregatedDataItem {
 }
 
 interface RainfallBarChartProps {
-  data: Array<{
+  data?: Array<{
     date?: string
     month?: string
     rainfall: number
@@ -32,25 +40,72 @@ interface RainfallBarChartProps {
     start?: string
     end?: string
   }
-  selectedLocation?: string 
+  selectedLocation?: string
+  useApiData?: boolean
+  height?: string
 }
 
 export function RainfallBarChart({ 
-  data, 
+  data = [], 
   type = "daily",
   orientation = "vertical",
   showComparison = false,
   comparisonData,
   dateRange,
-  selectedLocation
+  selectedLocation,
+  useApiData = false,
+  height = "h-80"
 }: RainfallBarChartProps) {
   
+  // Fetch data from API if useApiData is true
+  const { 
+    data: apiData, 
+    error: apiError, 
+    isLoading: apiLoading 
+  } = useRainfallData(
+    useApiData ? {
+      location: type === "location-total" ? undefined : selectedLocation,
+      startDate: dateRange?.start,
+      endDate: dateRange?.end,
+      sortBy: 'date',
+      order: 'asc',
+      limit: 1000
+    } : {}
+  )
+
+  // Determine data source
+  const dataSource = useApiData && apiData?.data 
+    ? transformRainfallDataForCharts(apiData.data)
+    : data
+
+  // Show loading state
+  if (useApiData && apiLoading) {
+    return (
+      <div className={`${height} flex items-center justify-center`}>
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <span className="ml-2">Loading chart data...</span>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (useApiData && apiError) {
+    return (
+      <div className={`${height} flex items-center justify-center`}>
+        <div className="text-center">
+          <div className="text-red-500 mb-2">Failed to load chart data</div>
+          <div className="text-sm text-muted-foreground">{apiError.message}</div>
+        </div>
+      </div>
+    )
+  }
+  
   console.log('RainfallBarChart props:', { 
-    dataLength: data.length, 
+    dataLength: dataSource.length, 
     type, 
     selectedLocation, 
     dateRange,
-    sampleData: data.slice(0, 3)
+    sampleData: dataSource.slice(0, 3)
   })
   
   // Aggregate data by location when type is "location-total"
@@ -60,11 +115,11 @@ export function RainfallBarChart({
     if (type === "monthly-location-total" && selectedLocation && selectedLocation !== "all") {
       console.log('=== DEBUGGING LOCATION FILTER ===')
       console.log('Selected location:', selectedLocation)
-      console.log('Data sample:', data.slice(0, 3))
+      console.log('Data sample:', dataSource.slice(0, 3))
       
       // Filter data for the selected location and group by day
       // Handle both location codes (GSW-PIT) and full names (Gosowong Pit)
-      const locationData = data.filter(item => {
+      const locationData = dataSource.filter(item => {
         if (!item.location) return false
         
         console.log('Checking item:', item.location, 'vs selected:', selectedLocation)
@@ -154,7 +209,7 @@ export function RainfallBarChart({
     if (type === "location-total") {
       const locationTotals: { [key: string]: number } = {}
       
-      data.forEach(item => {
+      dataSource.forEach(item => {
         if (item.location) {
           if (!locationTotals[item.location]) {
             locationTotals[item.location] = 0
@@ -172,7 +227,7 @@ export function RainfallBarChart({
     if (type === "monthly-location-total") {
       const monthlyLocationTotals: { [key: string]: { [key: string]: number } } = {}
       
-      data.forEach(item => {
+      dataSource.forEach(item => {
         if (item.location && item.date) {
           const date = new Date(item.date)
           const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
@@ -230,9 +285,9 @@ export function RainfallBarChart({
       return aggregatedData.map((item: AggregatedDataItem) => item.location || "Unknown")
     }
     if (type === "monthly") {
-      return data.map((item) => item.month || "")
+      return dataSource.map((item) => item.date || "")
     }
-    return data.map((item) => {
+    return dataSource.map((item) => {
       if (item.date) {
         const date = new Date(item.date)
         return date.toLocaleDateString("id-ID", { 
@@ -406,7 +461,7 @@ export function RainfallBarChart({
             </p>
             <p className="text-xs mt-2">
               Lokasi: {selectedLocation || "Semua"} | 
-              Data items: {data.length} | 
+              Data items: {dataSource.length} | 
               Type: {type}
             </p>
           </div>
