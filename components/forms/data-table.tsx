@@ -47,9 +47,6 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
       Object.entries(filters_obj).filter(([v]) => v !== undefined)
     )
     
-    console.log('DataTable API Filters:', cleanFilters)
-    console.log('Original filters from props:', filters)
-    
     return cleanFilters
   }, [filters, currentPage, pageSize, sortBy, sortOrder])
 
@@ -59,11 +56,6 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
     isLoading: apiLoading,
     mutate: refreshData
   } = useRainfallData(apiFilters)
-
-  // Debug logging
-  console.log('API Response:', apiResponse)
-  console.log('API Error:', apiError)
-  console.log('API Loading:', apiLoading)
 
   const { deleteRainfallData, isDeleting } = useRainfallMutations()
   

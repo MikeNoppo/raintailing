@@ -97,33 +97,19 @@ export function RainfallBarChart({
     )
   }
   
-  console.log('RainfallBarChart props:', { 
-    dataLength: dataSource.length, 
-    type, 
-    selectedLocation, 
-    dateRange,
-    sampleData: dataSource.slice(0, 3)
-  })
-  
   // Aggregate data by location when type is "location-total"
   const getAggregatedData = () => {
     // If a specific location is selected and we're in monthly-location-total mode,
     // show daily data for that location instead of aggregated totals
     if (type === "monthly-location-total" && selectedLocation && selectedLocation !== "all") {
-      console.log('=== DEBUGGING LOCATION FILTER ===')
-      console.log('Selected location:', selectedLocation)
-      console.log('Data sample:', dataSource.slice(0, 3))
       
       // Filter data for the selected location and group by day
       // Handle both location codes (GSW-PIT) and full names (Gosowong Pit)
       const locationData = dataSource.filter(item => {
         if (!item.location) return false
         
-        console.log('Checking item:', item.location, 'vs selected:', selectedLocation)
-        
         // Direct match first
         if (item.location === selectedLocation) {
-          console.log('Direct match found!')
           return true
         }
         
@@ -156,15 +142,11 @@ export function RainfallBarChart({
         const codeMatch = selectedCode === item.location
         
         if (directMatch || codeMatch) {
-          console.log('Match found via mapping!')
           return true
         }
         
         return false
       })
-      
-      console.log('Filtered location data count:', locationData.length)
-      console.log('Sample filtered data:', locationData.slice(0, 3))
       
       // If we have a date range, filter by it, otherwise use current month
       let filteredData = locationData
@@ -180,20 +162,16 @@ export function RainfallBarChart({
         })
       } else {
         // Default to June 2025 since that's where our data is
-        console.log('Using default June 2025 filter')
         filteredData = locationData.filter(item => {
           if (item.date) {
             const itemDate = new Date(item.date)
             // Check for June 2025 (month 5, 0-indexed)
             const isJune2025 = itemDate.getMonth() === 5 && itemDate.getFullYear() === 2025
-            console.log('Date check:', item.date, '-> month:', itemDate.getMonth(), 'year:', itemDate.getFullYear(), 'isJune2025:', isJune2025)
             return isJune2025
           }
           return false
         })
       }
-      
-      console.log('Final filtered data:', filteredData) // Debug log
       
       return filteredData.sort((a, b) => {
         if (a.date && b.date) {

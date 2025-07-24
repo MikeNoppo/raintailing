@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
-import { dailyData } from '../lib/data/rainfall-data'
+import bcryptjs from 'bcryptjs'
+import { dailyData } from '../lib/data/deprecated/rainfall-data'
 
 const prisma = new PrismaClient()
 
@@ -18,7 +18,7 @@ async function main() {
   console.log('🌱 Starting database seeding...')
 
   // Create default admin user
-  const hashedPassword = await bcrypt.hash('admin123', 12)
+  const hashedPassword = await bcryptjs.hash('admin123', 12)
   
   const adminUser = await prisma.user.upsert({
     where: { username: 'admin' },

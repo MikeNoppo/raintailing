@@ -116,11 +116,6 @@ export const CHART_CONFIG = {
   },
 } as const
 
-// localStorage keys
-export const STORAGE_KEYS = {
-  LOCATIONS: 'rainfall-locations',
-} as const
-
 // Date format options
 export const DATE_FORMATS = {
   SHORT: { month: 'short' as const, day: 'numeric' as const },

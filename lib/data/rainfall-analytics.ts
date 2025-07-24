@@ -1,4 +1,3 @@
-import { dailyData } from "./rainfall-data"
 import { RAINFALL_CATEGORIES } from '@/lib/constants'
 import type { RainfallCategory, RainfallData } from '@/lib/types'
 
@@ -14,7 +13,7 @@ export function classifyRainfall(amount: number): RainfallCategory {
 }
 
 // Get rainfall statistics by location
-export function getRainfallStatsByLocation(data: RainfallData[] = dailyData) {
+export function getRainfallStatsByLocation(data: RainfallData[]) {
   const locationStats = new Map<string, {
     location: string
     totalDays: number
@@ -71,7 +70,7 @@ export function getRainfallStatsByLocation(data: RainfallData[] = dailyData) {
 }
 
 // Get overall rainfall statistics
-export function getOverallRainfallStats(data: RainfallData[] = dailyData) {
+export function getOverallRainfallStats(data: RainfallData[]) {
   const categories: Record<RainfallCategory, number> = {
     tidakHujan: 0,
     ringan: 0,
@@ -112,7 +111,7 @@ export function getOverallRainfallStats(data: RainfallData[] = dailyData) {
 }
 
 // Get rainfall trends (daily changes)
-export function getRainfallTrends(data: RainfallData[] = dailyData, location?: string) {
+export function getRainfallTrends(data: RainfallData[], location?: string) {
   let filteredData = data
   
   if (location) {
@@ -147,7 +146,7 @@ export function getRainfallTrends(data: RainfallData[] = dailyData, location?: s
 }
 
 // Get monthly summary
-export function getMonthlyClassificationSummary(data: RainfallData[] = dailyData) {
+export function getMonthlyClassificationSummary(data: RainfallData[]) {
   const monthlyData = new Map<string, {
     month: string
     categories: Record<RainfallCategory, number>
