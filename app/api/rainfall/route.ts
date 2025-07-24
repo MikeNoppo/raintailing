@@ -52,17 +52,10 @@ export async function GET(request: NextRequest) {
       include: {
         location: {
           select: {
-            id: true,
+            id: false,
             code: true,
             name: true,
-            status: true
-          }
-        },
-        user: {
-          select: {
-            id: true,
-            username: true,
-            name: true
+            status: false
           }
         }
       },
