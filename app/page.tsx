@@ -16,7 +16,7 @@ import { TAB_IDS, DASHBOARD_CONFIG } from "@/lib/constants/dashboard"
 function DashboardContent() {
   const [activeTab, setActiveTab] = useState<string>(DASHBOARD_CONFIG.DEFAULT_TAB)
   const searchParams = useSearchParams()
-  const { isAuthenticated, logout, requireAuth, user } = useAuth()
+  const { isAuthenticated, logout, requireAuth } = useAuth()
   const { filters, filteredData, updateFilters } = useDataFilter(dailyData)
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { LocationStatus } from '@prisma/client'
 
 export interface Location {
@@ -31,7 +31,14 @@ export interface CreateLocationData {
   status?: LocationStatus
 }
 
-export interface UpdateLocationData extends Partial<CreateLocationData> {}
+export interface UpdateLocationData {
+  name?: string
+  code?: string
+  description?: string
+  latitude?: number
+  longitude?: number
+  status?: LocationStatus
+}
 
 interface UseLocationsOptions {
   status?: LocationStatus
@@ -52,7 +59,7 @@ export function useLocations(options: UseLocationsOptions = {}) {
     refreshInterval = 30000
   } = options
 
-  const fetchLocations = async () => {
+  const fetchLocations = useCallback(async () => {
     try {
       setError(null)
       const params = new URLSearchParams()
@@ -73,7 +80,7 @@ export function useLocations(options: UseLocationsOptions = {}) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [status, includeInactive])
 
   useEffect(() => {
     fetchLocations()
@@ -82,7 +89,7 @@ export function useLocations(options: UseLocationsOptions = {}) {
       const interval = setInterval(fetchLocations, refreshInterval)
       return () => clearInterval(interval)
     }
-  }, [status, includeInactive, autoRefresh, refreshInterval])
+  }, [fetchLocations, autoRefresh, refreshInterval])
 
   const refetch = () => {
     setLoading(true)
@@ -103,7 +110,7 @@ export function useLocation(id: string) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchLocation = async () => {
+  const fetchLocation = useCallback(async () => {
     if (!id) return
 
     try {
@@ -121,11 +128,11 @@ export function useLocation(id: string) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
 
   useEffect(() => {
     fetchLocation()
-  }, [id])
+  }, [fetchLocation])
 
   const refetch = () => {
     setLoading(true)

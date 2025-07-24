@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { MapPin, Plus, Edit2, Trash2, Save, Loader2, RefreshCw } from "lucide-react"
+import { MapPin, Plus, Edit2, Trash2, Loader2, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import { useLocations, useLocationMutations, type Location, type CreateLocationData, type UpdateLocationData } from "@/lib/hooks/useLocations"
 import { LocationStatus } from "@prisma/client"
@@ -82,7 +82,7 @@ export function LocationManagement() {
       setIsDialogOpen(false)
       resetForm()
       refetch()
-    } catch (error) {
+    } catch {
       // Error handling sudah ada di hook
     }
   }
@@ -105,7 +105,7 @@ export function LocationManagement() {
         await deleteLocation(locationId)
         toast.success("Lokasi berhasil dihapus")
         refetch()
-      } catch (error) {
+      } catch {
         // Error handling sudah ada di hook
       }
     }
@@ -117,33 +117,8 @@ export function LocationManagement() {
       await updateLocationStatus(locationId, newStatus)
       toast.success("Status lokasi berhasil diubah")
       refetch()
-    } catch (error) {
+    } catch {
       // Error handling sudah ada di hook
-    }
-  }
-
-  const exportLocations = async () => {
-    try {
-      // Convert location data for export
-      const exportData = locations.map(loc => ({
-        id: loc.id,
-        name: loc.name,
-        code: loc.code,
-        description: loc.description || undefined,
-        coordinates: loc.latitude && loc.longitude ? {
-          lat: loc.latitude,
-          lng: loc.longitude
-        } : undefined,
-        status: loc.status === 'ACTIVE' ? 'active' : 'inactive',
-        createdAt: new Date(loc.createdAt)
-      }))
-      
-      // Note: You may need to update exportLocationDataToExcel function to handle new data structure
-      // await exportLocationDataToExcel(exportData)
-      toast.success("Data lokasi berhasil diekspor ke Excel")
-    } catch (error) {
-      console.error("Export error:", error)
-      toast.error("Gagal mengekspor data lokasi ke Excel")
     }
   }
 
@@ -199,10 +174,6 @@ export function LocationManagement() {
               <Button variant="outline" onClick={refetch} disabled={loading}>
                 <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
-              </Button>
-              <Button variant="outline" onClick={exportLocations}>
-                <Save className="mr-2 h-4 w-4" />
-                Export
               </Button>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
