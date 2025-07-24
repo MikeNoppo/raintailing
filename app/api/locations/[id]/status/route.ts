@@ -7,7 +7,7 @@ import { LocationStatus } from '@prisma/client'
 // PATCH /api/locations/[id]/status - Toggle location status
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -20,7 +20,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { id } = params
+    const { id } = await context.params
     const body = await request.json()
     const { status } = body
 
