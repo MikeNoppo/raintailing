@@ -74,9 +74,6 @@ function DashboardContent() {
 
         {activeTab === TAB_IDS.DATA && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Data Curah Hujan</h2>
-            </div>
             <FilterControls onFilterChange={handleFilterChange} />
             <DataTable data={filteredData} />
           </div>
@@ -84,7 +81,6 @@ function DashboardContent() {
 
         {activeTab === TAB_IDS.ADMIN && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Panel Admin</h2>
             <AdminPanel />
           </div>
         )}
