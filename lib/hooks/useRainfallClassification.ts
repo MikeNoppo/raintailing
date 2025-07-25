@@ -101,7 +101,7 @@ export function useRainfallClassification(filters: ClassificationFilters = {}) {
 
 // Hook for real-time classification statistics
 export function useClassificationStats(filters: ClassificationFilters = {}) {
-  const { data, error, isLoading, summary } = useRainfallClassification(filters)
+  const {  error, isLoading, summary } = useRainfallClassification(filters)
 
   return {
     isLoading,
