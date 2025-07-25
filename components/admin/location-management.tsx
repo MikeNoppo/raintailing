@@ -282,8 +282,6 @@ export function LocationManagement() {
                   <TableHead>Nama Lokasi</TableHead>
                   <TableHead>Kode</TableHead>
                   <TableHead>Deskripsi</TableHead>
-                  <TableHead>Koordinat</TableHead>
-                  <TableHead>Data</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
@@ -299,28 +297,6 @@ export function LocationManagement() {
                       <div className="max-w-[200px] truncate" title={location.description || ""}>
                         {location.description || "-"}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      {location.latitude && location.longitude ? (
-                        <div className="text-sm">
-                          <div>{location.latitude.toFixed(6)}</div>
-                          <div>{location.longitude.toFixed(6)}</div>
-                        </div>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {location._count ? (
-                        <div className="text-sm">
-                          <div>{location._count.rainfallData || 0} records</div>
-                          <div className="text-muted-foreground">
-                            {location._count.monthlyAggregates || 0} monthly
-                          </div>
-                        </div>
-                      ) : (
-                        "-"
-                      )}
                     </TableCell>
                     <TableCell>
                       <div 
@@ -355,7 +331,7 @@ export function LocationManagement() {
                 ))}
                 {locations.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
+                    <TableCell colSpan={5} className="h-24 text-center">
                       Belum ada data lokasi. Tambahkan lokasi baru untuk memulai.
                     </TableCell>
                   </TableRow>
