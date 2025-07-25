@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, code, description, latitude, longitude, status } = body
+    const { name, code, description, status } = body
 
     // Validate required fields
     if (!name || !code) {
@@ -87,8 +87,6 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         code: code.trim().toUpperCase(),
         description: description?.trim() || null,
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
         status: status || 'ACTIVE'
       }
     })

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -38,18 +38,14 @@ export function LocationManagement() {
   const [formData, setFormData] = useState({
     name: "",
     code: "",
-    description: "",
-    latitude: "",
-    longitude: ""
+    description: ""
   })
 
   const resetForm = () => {
     setFormData({
       name: "",
       code: "",
-      description: "",
-      latitude: "",
-      longitude: ""
+      description: ""
     })
     setEditingLocation(null)
   }
@@ -67,8 +63,6 @@ export function LocationManagement() {
         name: formData.name.trim(),
         code: formData.code.trim().toUpperCase(),
         description: formData.description.trim() || undefined,
-        latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
-        longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
       }
 
       if (editingLocation) {
@@ -92,9 +86,7 @@ export function LocationManagement() {
     setFormData({
       name: location.name,
       code: location.code,
-      description: location.description || "",
-      latitude: location.latitude?.toString() || "",
-      longitude: location.longitude?.toString() || ""
+      description: location.description || ""
     })
     setIsDialogOpen(true)
   }
@@ -226,32 +218,6 @@ export function LocationManagement() {
                           rows={3}
                           disabled={mutationLoading}
                         />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="grid gap-2">
-                          <Label htmlFor="latitude">Latitude</Label>
-                          <Input
-                            id="latitude"
-                            type="number"
-                            step="any"
-                            value={formData.latitude}
-                            onChange={(e) => setFormData(prev => ({ ...prev, latitude: e.target.value }))}
-                            placeholder="-6.123456"
-                            disabled={mutationLoading}
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="longitude">Longitude</Label>
-                          <Input
-                            id="longitude"
-                            type="number"
-                            step="any"
-                            value={formData.longitude}
-                            onChange={(e) => setFormData(prev => ({ ...prev, longitude: e.target.value }))}
-                            placeholder="106.123456"
-                            disabled={mutationLoading}
-                          />
-                        </div>
                       </div>
                     </div>
                     <DialogFooter>

@@ -69,7 +69,7 @@ export async function PATCH(
 
     const { id } = await context.params
     const body = await request.json()
-    const { name, code, description, latitude, longitude, status } = body
+    const { name, code, description, status } = body
 
     // Check if location exists
     const existingLocation = await prisma.location.findUnique({
@@ -101,8 +101,6 @@ export async function PATCH(
         ...(name && { name: name.trim() }),
         ...(code && { code: code.trim().toUpperCase() }),
         ...(description !== undefined && { description: description?.trim() || null }),
-        ...(latitude !== undefined && { latitude: latitude ? parseFloat(latitude) : null }),
-        ...(longitude !== undefined && { longitude: longitude ? parseFloat(longitude) : null }),
         ...(status && { status: status as LocationStatus })
       }
     })
