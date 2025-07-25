@@ -3,118 +3,278 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-// POST /api/rainfall/bulk - Bulk create rainfall data (ADMIN ONLY)
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
 
-    // Only ADMIN can bulk create rainfall data
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true }
-    })
-
-    if (!user || user.role !== 'ADMIN') {
+    if (!session || !session.user || !session.user.id) {
       return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
-        { status: 403 }
+        { success: false, error: 'Unauthorized - User session not found' },
+        { status: 401 }
       )
     }
 
-    const { data: bulkData } = await request.json()
-
-    if (!Array.isArray(bulkData) || bulkData.length === 0) {
+    // Validasi apakah user ada di database
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id }
+    })
+    
+    if (!user) {
       return NextResponse.json(
-        { error: 'Invalid data format. Expected array of rainfall data.' },
+        { success: false, error: 'User tidak ditemukan di database' },
         { status: 400 }
       )
     }
 
-    const results = {
-      total: bulkData.length,
-      success: 0,
-      failed: 0,
-      errors: [] as Array<{ index: number; error: string; data: unknown }>
+    // Baca FormData
+    const formData = await request.formData()
+    const file = formData.get('file') as File
+
+    if (!file) {
+      return NextResponse.json(
+        { success: false, error: 'File tidak ditemukan' },
+        { status: 400 }
+      )
     }
 
-    // Get all locations for validation
-    const locations = await prisma.location.findMany({
-      where: { status: 'ACTIVE' },
-      select: { id: true, code: true }
-    })
+    // Proses file CSV
+    const fileText = await file.text()
+    const lines = fileText.split('\n').map(line => line.trim())
+    
+    if (lines.length < 2) {
+      return NextResponse.json(
+        { success: false, error: 'File CSV kosong atau tidak valid' },
+        { status: 400 }
+      )
+    }
 
-    const locationMap = new Map(locations.map(loc => [loc.code, loc.id]))
+    const rainfallDataToCreate: Array<{
+      date: Date;
+      rainfall: number;
+      locationId: string;
+      userId?: string | null;
+    }> = []
 
-    // Process each record
-    for (let i = 0; i < bulkData.length; i++) {
-      const record = bulkData[i]
+    // Ambil semua lokasi aktif untuk validasi
+    const locations = await prisma.location.findMany({ where: { status: 'ACTIVE' }})
+    const locationMap = new Map(locations.map(loc => [loc.name, loc.id]))
+
+    // Parse header CSV - cari baris yang dimulai dengan "Date"
+    let headerRowIndex = -1;
+    let dataStartIndex = -1;
+    let csvSeparator = ',';
+    let locationHeaderRowIndex = -1;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
       
-      try {
-        // Validate required fields
-        if (!record.date || record.rainfall === undefined || !record.location) {
-          throw new Error('Missing required fields: date, rainfall, location')
+      if (!line || line.trim() === '') {
+        continue;
+      }
+      
+      // Deteksi separator - coba comma, tab, semicolon
+      let columns = line.split(',');
+      let separator = ',';
+      
+      if (columns.length <= 1) {
+        columns = line.split('\t');
+        separator = '\t';
+      }
+      
+      if (columns.length <= 1) {
+        columns = line.split(';');
+        separator = ';';
+      }
+      
+      if (columns.length === 0) {
+        continue;
+      }
+      
+      const firstColumn = columns[0].trim().toLowerCase();
+      
+      if (firstColumn === 'date') {
+        headerRowIndex = i;
+        csvSeparator = separator;
+        
+        // Cek format header: standar vs terpisah
+        const hasLocationData = columns.slice(1).some(col => col.trim() !== '' && !col.toLowerCase().includes('location'));
+        
+        if (hasLocationData) {
+          dataStartIndex = i + 1;
+        } else {
+          locationHeaderRowIndex = i + 1;
+          dataStartIndex = i + 2;
         }
-
-        // Validate rainfall value
-        if (record.rainfall < 0) {
-          throw new Error('Rainfall value must be >= 0')
+        break;
+      }
+    }
+    
+    if (headerRowIndex === -1) {
+      return NextResponse.json({
+        success: false,
+        error: `Tidak ditemukan baris header yang dimulai dengan "Date" dalam file CSV. Pastikan ada kolom "Date" di file CSV.`,
+        details: {
+          totalLines: lines.length,
+          checkedLines: lines.map((line, index) => ({
+            lineNumber: index + 1,
+            content: line,
+            isEmpty: !line || line.trim() === '',
+            firstColumn: line ? line.split(',')[0]?.trim() : 'N/A',
+            firstColumnSemicolon: line ? line.split(';')[0]?.trim() : 'N/A'
+          }))
         }
+      }, { status: 400 })
+    }
+    
+    // Parse headers berdasarkan format yang terdeteksi
+    let headers: string[] = []
+    
+    if (locationHeaderRowIndex !== -1) {
+      const locationLine = lines[locationHeaderRowIndex];
+      if (!locationLine) {
+        return NextResponse.json({
+          success: false,
+          error: 'Baris header lokasi tidak ditemukan atau kosong'
+        }, { status: 400 })
+      }
+      
+      const locationHeaders = locationLine.split(csvSeparator).map(h => h.trim())
+      headers = ['Date', ...locationHeaders.slice(1)]
+    } else {
+      headers = lines[headerRowIndex].split(csvSeparator).map(h => h.trim())
+    }
 
-        // Get location ID
-        const locationId = locationMap.get(record.location)
-        if (!locationId) {
-          throw new Error(`Location '${record.location}' not found or inactive`)
-        }
-
-        // Check for duplicate
-        const existingEntry = await prisma.rainfallData.findFirst({
-          where: {
-            date: new Date(record.date),
-            locationId
-          }
-        })
-
-        if (existingEntry) {
-          throw new Error(`Duplicate entry for date ${record.date} and location ${record.location}`)
-        }
-
-        // Create rainfall data
-        await prisma.rainfallData.create({
-          data: {
-            date: new Date(record.date),
-            rainfall: parseFloat(record.rainfall),
-            locationId,
-            userId: session.user.id,
-            notes: record.notes || null
-          }
-        })
-
-        results.success++
-
-      } catch (error) {
-        results.failed++
-        results.errors.push({
-          index: i + 1,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          data: record
+    // Buat mapping kolom lokasi
+    const locationColumns: Array<{
+      columnIndex: number;
+      locationName: string;
+    }> = []
+    
+    for (let i = 1; i < headers.length; i++) {
+      const headerName = headers[i].trim()
+      if (headerName && headerName !== '') {
+        locationColumns.push({
+          columnIndex: i,
+          locationName: headerName
         })
       }
     }
 
-    const statusCode = results.failed > 0 ? 207 : 201 // 207 = Multi-Status
+    // Validasi apakah ada lokasi yang cocok
+    const matchedLocations = locationColumns.filter(col => 
+      locationMap.has(col.locationName)
+    )
+    
+    if (matchedLocations.length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'Tidak ada lokasi di CSV yang cocok dengan database. Periksa nama lokasi di header CSV.',
+        details: {
+          csvHeaders: locationColumns.map(l => l.locationName),
+          availableLocations: locations.map(l => l.name)
+        }
+      }, { status: 400 })
+    }
+
+    // Parse data CSV
+    for (let i = dataStartIndex; i < lines.length; i++) {
+      const line = lines[i];
+      
+      if (!line || line.trim() === '') {
+        continue;
+      }
+      
+      const values = line.split(csvSeparator).map(v => v.trim())
+      
+      if (values.length < 2) {
+        continue;
+      }
+      
+      const dateValue = values[0]
+      
+      if (!dateValue || dateValue === '') {
+        continue;
+      }
+      
+      // Skip baris summary/total
+      if (dateValue.toLowerCase().includes('total') || 
+          dateValue.toLowerCase().includes('average') || 
+          dateValue.toLowerCase().includes('peak') || 
+          dateValue.toLowerCase().includes('rain days') || 
+          dateValue.toLowerCase().includes('wet days')) {
+        continue;
+      }
+      
+      const date = new Date(dateValue)
+      if (isNaN(date.getTime())) {
+        continue;
+      }
+      
+      // Parse data untuk setiap lokasi
+      locationColumns.forEach(({ columnIndex, locationName }) => {
+        if (columnIndex < values.length) {
+          const rainfallValue = values[columnIndex]
+          const normalizedValue = rainfallValue.replace(',', '.')
+          const rainfall = parseFloat(normalizedValue)
+          const locationId = locationMap.get(locationName)
+          
+          if (locationId && !isNaN(rainfall) && rainfall >= 0) {
+            rainfallDataToCreate.push({
+              date,
+              rainfall,
+              locationId,
+              userId: session.user.id,
+            })
+          }
+        }
+      })
+    }
+
+    // Simpan data ke database
+    if (rainfallDataToCreate.length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'Tidak ada data valid yang ditemukan dalam file CSV',
+        imported: 0,
+        totalRows: 0,
+      }, { status: 400 })
+    }
+
+    const result = await prisma.rainfallData.createMany({
+      data: rainfallDataToCreate,
+      skipDuplicates: true,
+    })
 
     return NextResponse.json({
-      message: `Bulk import completed. ${results.success} successful, ${results.failed} failed.`,
-      results
-    }, { status: statusCode })
+      success: true,
+      message: 'File berhasil diimpor!',
+      imported: result.count,
+      totalRows: rainfallDataToCreate.length,
+      skipped: rainfallDataToCreate.length - result.count,
+    }, { status: 201 })
 
   } catch (error) {
-    console.error('Bulk import error:', error)
+    console.error('Bulk CSV import error:', error)
+    
+    if (error && typeof error === 'object' && 'code' in error) {
+      if (error.code === 'P2003') {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Foreign key constraint error - User atau Location tidak valid',
+            details: error instanceof Error ? error.message : 'Database constraint error'
+          },
+          { status: 400 }
+        )
+      }
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        success: false,
+        error: 'Gagal memproses file CSV',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

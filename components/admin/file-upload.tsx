@@ -3,7 +3,7 @@
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload, FileSpreadsheet } from "lucide-react"
+import { Upload, FileSpreadsheet, X } from "lucide-react"
 import { toast } from "sonner"
 
 export function FileUpload() {
@@ -36,15 +36,14 @@ export function FileUpload() {
     const file = files[0]
     if (file) {
       if (
-        file.type === "application/vnd.ms-excel" ||
-        file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-        file.name.endsWith('.xlsx') ||
-        file.name.endsWith('.xls')
+        file.type === "text/csv" ||
+        file.type === "application/csv" ||
+        file.name.endsWith('.csv')
       ) {
         setSelectedFile(file)
         toast.success(`File ${file.name} berhasil dipilih dan siap diproses`)
       } else {
-        toast.error("Mohon upload file Excel (.xls atau .xlsx)")
+        toast.error("Mohon upload file CSV (.csv)")
         setSelectedFile(null)
       }
     }
@@ -63,14 +62,11 @@ export function FileUpload() {
         body: formData,
       })
 
-      if (!response.ok) {
-        throw new Error('Upload failed')
-      }
-
       const result = await response.json()
-      
-      if (result.success) {
-        toast.success(`File berhasil diproses! ${result.imported || 0} data berhasil diimport.`)
+
+      if (response.ok && result.success) {
+        const skippedMessage = result.skipped > 0 ? ` (${result.skipped} data duplikat dilewati)` : ''
+        toast.success(`File berhasil diproses! ${result.imported || 0} data berhasil diimport dari ${result.totalRows || 0} baris${skippedMessage}.`)
         setSelectedFile(null)
         
         // Reset file input
@@ -78,7 +74,7 @@ export function FileUpload() {
           fileInputRef.current.value = ''
         }
       } else {
-        toast.error(result.error || 'Gagal memproses file')
+        toast.error(result.error || result.message || 'Gagal memproses file')
       }
     } catch (error) {
       console.error('Error processing file:', error)
@@ -93,10 +89,10 @@ export function FileUpload() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileSpreadsheet className="h-5 w-5" />
-          Upload File Excel
+          Upload File CSV
         </CardTitle>
         <CardDescription>
-          Upload file Excel untuk import data curah hujan dalam jumlah besar
+          Upload file CSV untuk import data curah hujan dalam jumlah besar
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -113,7 +109,7 @@ export function FileUpload() {
           >
             <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <p className="text-lg font-medium text-gray-900 mb-2">
-              Drag & drop file Excel di sini
+              Drag & drop file CSV di sini
             </p>
             <p className="text-sm text-gray-500 mb-4">
               atau klik tombol di bawah untuk memilih file
@@ -121,7 +117,7 @@ export function FileUpload() {
             
             <input
               type="file"
-              accept=".xlsx,.xls"
+              accept=".csv"
               onChange={(e) => e.target.files && handleFiles(e.target.files)}
               className="hidden"
               ref={fileInputRef}
@@ -134,16 +130,33 @@ export function FileUpload() {
               type="button"
               disabled={isProcessing}
             >
-              Pilih File Excel
+              Pilih File CSV
             </Button>
           </div>
 
           {/* Show selected file */}
           {selectedFile && (
             <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-              <p className="text-sm text-green-800">
-                <strong>File dipilih:</strong> {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-green-800">
+                  <strong>File dipilih:</strong> {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedFile(null)
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = ''
+                    }
+                    toast.info("File berhasil dihapus")
+                  }}
+                  className="h-8 w-8 p-0"
+                  disabled={isProcessing}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
 
@@ -153,7 +166,7 @@ export function FileUpload() {
             onClick={handleProcessFile}
           >
             <Upload className="mr-2 h-4 w-4" />
-            {isProcessing ? 'Memproses...' : 'Proses File Excel'}
+            {isProcessing ? 'Memproses...' : 'Proses File CSV'}
           </Button>
         </div>
       </CardContent>
