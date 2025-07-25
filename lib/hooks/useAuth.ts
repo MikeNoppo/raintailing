@@ -15,9 +15,13 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      await signOut({ redirect: false })
-      toast.success('Logout berhasil!')
-      router.push('/')
+      // Sign out in background without redirect
+      signOut({ redirect: false }).then(() => {
+        toast.success('Logout berhasil!')
+      }).catch((error) => {
+        console.error('Logout error:', error)
+        toast.error('Terjadi kesalahan saat logout')
+      })
     } catch (error) {
       console.error('Logout error:', error)
       toast.error('Terjadi kesalahan saat logout')

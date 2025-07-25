@@ -17,7 +17,6 @@ export function LoginForm({
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,9 +33,8 @@ export function LoginForm({
         toast.error("Username atau password salah!")
       } else {
         toast.success("Login berhasil!")
-        // Redirect to appropriate page
-        const returnTab = searchParams.get('return') || 'dashboard'
-        router.push(`/?tab=${returnTab}`)
+        // Redirect faster to dashboard
+        router.replace('/')
       }
     } catch (error) {
       console.error("Login error:", error)

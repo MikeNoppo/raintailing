@@ -27,8 +27,8 @@ export function FilterControls({ onFilterChange }: FilterControlsProps) {
   // Fetch locations from API
   const { locations, loading: locationsLoading, error: locationsError, refetch } = useLocations({ 
     status: 'ACTIVE', 
-    autoRefresh: true, 
-    refreshInterval: 60000 
+    autoRefresh: false, // Disable auto-refresh for better performance
+    refreshInterval: 0 // No auto-refresh 
   })
 
   const handleLocationChange = (value: string) => {

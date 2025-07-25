@@ -71,8 +71,8 @@ export function DashboardStats({ data: propData, selectedLocation, useApiData = 
     loading: locationsLoading 
   } = useLocations({ 
     status: 'ACTIVE', 
-    autoRefresh: true, 
-    refreshInterval: 60000 
+    autoRefresh: false, // Disable auto-refresh for better performance
+    refreshInterval: 0 // No auto-refresh 
   })
 
   // Use API data if available, otherwise fallback to prop data

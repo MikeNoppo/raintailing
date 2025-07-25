@@ -100,9 +100,10 @@ export function useRainfallData(filters: RainfallFilters = {}) {
     url,
     fetcher,
     {
-      refreshInterval: 30000, // Refresh every 30 seconds
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true
+      refreshInterval: 0, // Disable auto-refresh to improve performance
+      revalidateOnFocus: false, // Disable revalidation on focus to reduce delays
+      revalidateOnReconnect: true,
+      dedupingInterval: 2000 // Dedupe requests within 2 seconds
     }
   )
 

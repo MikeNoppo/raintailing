@@ -55,8 +55,8 @@ export function useLocations(options: UseLocationsOptions = {}) {
   const {
     status,
     includeInactive = false,
-    autoRefresh = false,
-    refreshInterval = 30000
+    autoRefresh = false, // Disable auto-refresh by default to improve performance
+    refreshInterval = 60000 // Increase interval to 60 seconds when enabled
   } = options
 
   const fetchLocations = useCallback(async () => {

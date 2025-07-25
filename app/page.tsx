@@ -32,8 +32,10 @@ function DashboardContent() {
   }
 
   const handleLogout = () => {
-    logout()
+    // Immediate UI update untuk responsiveness
     setActiveTab(DASHBOARD_CONFIG.DEFAULT_TAB)
+    // Then execute logout
+    logout()
   }
 
   const handleFilterChange = (newFilters: {
