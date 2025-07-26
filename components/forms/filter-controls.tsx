@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -27,10 +27,13 @@ interface FilterControlsProps {
 export function FilterControls({ filters, onFilterChange }: FilterControlsProps) {
   // Use filters from parent component if provided, otherwise use defaults
   const location = filters?.location || "all"
-  const dateRange = filters?.dateRange ? {
-    from: filters.dateRange.from,
-    to: filters.dateRange.to
-  } : undefined
+  const dateRange = useMemo(() => 
+    filters?.dateRange ? {
+      from: filters.dateRange.from,
+      to: filters.dateRange.to
+    } : undefined,
+    [filters?.dateRange]
+  )
   
   // Fetch locations from API
   const { locations, loading: locationsLoading, error: locationsError, refetch } = useLocations({ 
