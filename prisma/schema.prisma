@@ -10,26 +10,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// NextAuth.js required models
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
-}
 
 model Session {
   id           String   @id @default(cuid())
@@ -41,6 +23,7 @@ model Session {
   @@map("sessions")
 }
 
+// NextAuth.js required models
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -54,10 +37,8 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  accounts     Account[]
   sessions     Session[]
   rainfallData RainfallData[]
-  uploads      FileUpload[]
 
   @@map("users")
 }
@@ -89,8 +70,6 @@ model Location {
 
   // Relations
   rainfallData      RainfallData[]
-  monthlyAggregates MonthlyAggregate[]
-  thresholds        RainfallThreshold[]
 
   @@map("locations")
 }
@@ -122,36 +101,6 @@ model RainfallData {
   @@map("rainfall_data")
 }
 
-// File upload tracking for Excel imports
-model FileUpload {
-  id           String           @id @default(cuid())
-  filename     String
-  originalName String
-  fileSize     Int
-  mimeType     String
-  status       FileUploadStatus @default(PENDING)
-  recordsCount Int?             // Number of records processed
-  errorCount   Int?             // Number of errors during processing
-  errorLog     String?          // Error details if any
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-
-  // Foreign keys
-  userId String
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("file_uploads")
-}
-
-enum FileUploadStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-}
-
 // System configurations and settings
 model SystemConfig {
   id    String @id @default(cuid())
@@ -181,45 +130,6 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-// Monthly aggregated data for performance
-model MonthlyAggregate {
-  id              String   @id @default(cuid())
-  year            Int
-  month           Int      // 1-12
-  locationId      String
-  totalRainfall   Float
-  averageRainfall Float
-  maxRainfall     Float
-  minRainfall     Float
-  recordCount     Int
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  // Relations
-  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
-
-  @@unique([year, month, locationId])
-  @@map("monthly_aggregates")
-}
-
-// Rainfall thresholds and alerts (for future use)
-model RainfallThreshold {
-  id          String   @id @default(cuid())
-  locationId  String?  // If null, applies to all locations
-  name        String   // e.g., "Warning Level", "Danger Level"
-  minValue    Float?   // Minimum rainfall threshold
-  maxValue    Float?   // Maximum rainfall threshold
-  alertType   String   // WARNING, DANGER, INFO
-  isActive    Boolean  @default(true)
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  location Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
-
-  @@map("rainfall_thresholds")
-}
 
 // User sessions for better security (legacy - will be replaced by NextAuth sessions)
 model UserSession {

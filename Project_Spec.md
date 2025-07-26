@@ -16,7 +16,7 @@
 ## 🗂️ Struktur Aplikasi
 
 ### 🔐 Authentication System
-- **Roles**: ADMIN, OPERATOR, VIEWER
+- **Roles**: ADMIN, VIEWER
 - **Features**: Username/password login, session management, role-based access
 - **Pages**: `/login` dengan redirect ke dashboard
 
@@ -59,7 +59,6 @@
 - 🔒 **POST/PUT/PATCH/DELETE** - Memerlukan autentikasi valid
 - 🔒 **Role-based operations**:
   - **ADMIN**: Full access ke semua operations
-  - **OPERATOR**: Create, Update rainfall data dan locations
   - **VIEWER**: Read-only access (sama dengan public)
 
 ### �🔐 Authentication APIs
