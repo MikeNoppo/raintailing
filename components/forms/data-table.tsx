@@ -6,11 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Download, ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
-import { toast } from "sonner"
-import { exportRainfallPivotToExcel } from "@/lib/utils/excel-export"
 import { useRainfallData, useRainfallMutations } from "@/lib/hooks"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { FilterControls } from "@/components/forms/filter-controls"
+import { MonthYearSelector } from "@/components/forms/month-year-selector"
 
 interface DataTableProps {
   filters?: {
@@ -29,6 +28,9 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
   const [pageSize, setPageSize] = useState(25)
   const [sortBy, setSortBy] = useState('date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  
+  // State untuk export dialog
+  const [showExportDialog, setShowExportDialog] = useState(false)
 
   // API data fetching
   const apiFilters = useMemo(() => {
@@ -89,21 +91,9 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
     hasPrev: false
   }
 
-  // Export function
-  const exportToExcel = async () => {
-    try {
-      const exportData = tableData.map(row => ({
-        date: row.date,
-        rainfall: row.rainfall,
-        location: row.location
-      }))
-
-      await exportRainfallPivotToExcel(exportData)
-      toast.success("Data berhasil diekspor ke Excel")
-    } catch (error) {
-      console.error("Export error:", error)
-      toast.error("Gagal mengekspor data ke Excel")
-    }
+  // Export function - opens dialog instead of immediate export
+  const handleExportClick = () => {
+    setShowExportDialog(true)
   }
 
   // Delete function (only for API mode)
@@ -156,7 +146,7 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
               </p>
             )}
           </div>
-          <Button onClick={exportToExcel} className="flex items-center gap-2">
+          <Button onClick={handleExportClick} className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             Export Excel
           </Button>
@@ -334,6 +324,13 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
         )}
       </CardContent>
     </Card>
+
+    {/* Month/Year Export Dialog */}
+    <MonthYearSelector
+      open={showExportDialog}
+      onClose={() => setShowExportDialog(false)}
+      currentLocation={filters?.location}
+    />
     </div>
   )
 }

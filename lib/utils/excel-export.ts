@@ -25,6 +25,13 @@ export interface PivotRainfallData {
   [locationCode: string]: string | number // Dynamic location columns
 }
 
+export interface MonthlyExportData {
+  date: string
+  rainfall: number
+  location: string
+  locationCode: string
+}
+
 /**
  * Export rainfall data in pivot table format (locations as columns)
  */
@@ -440,5 +447,233 @@ export const exportMultiSheetExcel = async (
   } catch (error) {
     console.error('Error exporting multi-sheet Excel:', error)
     throw new Error('Gagal mengekspor laporan lengkap ke Excel')
+  }
+}
+
+/**
+ * Export monthly rainfall data with comprehensive statistics
+ */
+export const exportMonthlyRainfallToExcel = async (
+  data: MonthlyExportData[],
+  year: number,
+  month: number,
+  filename?: string
+) => {
+  try {
+    // Create a new workbook
+    const workbook = new ExcelJS.Workbook()
+    const worksheet = workbook.addWorksheet('Monthly Rainfall Report')
+
+    // Get month name in Indonesian
+    const monthNames = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ]
+    const monthName = monthNames[month - 1]
+
+    // Get unique locations and sort by location code
+    const locations = [...new Set(data.map(d => d.locationCode))].sort()
+    const locationNames: { [key: string]: string } = {}
+    data.forEach(d => {
+      locationNames[d.locationCode] = d.location
+    })
+
+    // Get unique dates and sort
+    const dates = [...new Set(data.map(d => d.date))].sort()
+
+    // Create pivot data structure
+    const pivotData: { [date: string]: { [locationCode: string]: number } } = {}
+    
+    data.forEach(item => {
+      if (!pivotData[item.date]) {
+        pivotData[item.date] = {}
+      }
+      pivotData[item.date][item.locationCode] = item.rainfall
+    })
+
+    // Add title
+    worksheet.addRow([`Laporan Curah Hujan ${monthName} ${year}`])
+    const titleRow = worksheet.getRow(1)
+    titleRow.font = { bold: true, size: 16 }
+    titleRow.alignment = { horizontal: 'center' }
+    worksheet.mergeCells(1, 1, 1, locations.length + 1)
+
+    // Add empty row
+    worksheet.addRow([])
+
+    // Set up data table headers
+    const headers = ['Tanggal', ...locations.map(code => `${locationNames[code]} (${code})`)]
+    worksheet.addRow(headers)
+
+    // Style the header row
+    const headerRow = worksheet.getRow(3)
+    headerRow.font = { bold: true }
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF4472C4' }
+    }
+    headerRow.getCell(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF70AD47' }
+    }
+
+    // Add data rows
+    dates.forEach(date => {
+      const row: (string | number)[] = [
+        new Date(date).toLocaleDateString('id-ID', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        })
+      ]
+      
+      locations.forEach(locationCode => {
+        row.push(pivotData[date]?.[locationCode] || 0)
+      })
+      
+      worksheet.addRow(row)
+    })
+
+    // Calculate statistics
+    const stats: { [locationCode: string]: {
+      total: number;
+      average: number;
+      peak: number;
+      rainDays: number;
+      wetDays: number;
+    } } = {}
+    
+    locations.forEach(locationCode => {
+      const locationData = data.filter(d => d.locationCode === locationCode)
+      const rainfallValues = locationData.map(d => d.rainfall)
+      
+      stats[locationCode] = {
+        total: rainfallValues.reduce((sum, r) => sum + r, 0),
+        average: rainfallValues.length > 0 ? rainfallValues.reduce((sum, r) => sum + r, 0) / rainfallValues.length : 0,
+        peak: rainfallValues.length > 0 ? Math.max(...rainfallValues) : 0,
+        rainDays: rainfallValues.filter(r => r > 0).length,
+        wetDays: rainfallValues.filter(r => r >= 1).length
+      }
+    })
+
+    // Add empty row before statistics
+    worksheet.addRow([])
+    const summaryStartRow = (worksheet.lastRow?.number || 0) + 1
+
+    // Statistics section title
+    worksheet.addRow(['STATISTIK BULANAN'])
+    const statsTitle = worksheet.getRow(summaryStartRow)
+    statsTitle.font = { bold: true, size: 14 }
+    statsTitle.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF6B35' }
+    }
+    worksheet.mergeCells(summaryStartRow, 1, summaryStartRow, locations.length + 1)
+
+    // Total row
+    const totalRow = [`Total ${monthName} ${year} (mm)`, ...locations.map(code => stats[code].total.toFixed(1))]
+    worksheet.addRow(totalRow)
+    const totalRowNum = worksheet.lastRow?.number || 0
+    worksheet.getRow(totalRowNum).font = { bold: true }
+    worksheet.getRow(totalRowNum).getCell(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFBF9000' }
+    }
+
+    // Average row
+    const avgRow = ['Rata-rata per Hari (mm)', ...locations.map(code => stats[code].average.toFixed(2))]
+    worksheet.addRow(avgRow)
+    const avgRowNum = worksheet.lastRow?.number || 0
+    worksheet.getRow(avgRowNum).font = { bold: true }
+    worksheet.getRow(avgRowNum).getCell(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF70AD47' }
+    }
+
+    // Peak row
+    const peakRow = ['Curah Hujan Harian Tertinggi (mm)', ...locations.map(code => stats[code].peak.toFixed(1))]
+    worksheet.addRow(peakRow)
+    const peakRowNum = worksheet.lastRow?.number || 0
+    worksheet.getRow(peakRowNum).font = { bold: true }
+    worksheet.getRow(peakRowNum).getCell(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFF0000' }
+    }
+
+    // Rain Days row
+    const rainDaysRow = ['Hari Hujan (hari)', ...locations.map(code => stats[code].rainDays.toString())]
+    worksheet.addRow(rainDaysRow)
+    const rainDaysRowNum = worksheet.lastRow?.number || 0
+    worksheet.getRow(rainDaysRowNum).font = { bold: true }
+    worksheet.getRow(rainDaysRowNum).getCell(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF5B9BD5' }
+    }
+
+    // Wet Days row
+    const wetDaysRow = ['Hari Basah ≥1mm (hari)', ...locations.map(code => stats[code].wetDays.toString())]
+    worksheet.addRow(wetDaysRow)
+    const wetDaysRowNum = worksheet.lastRow?.number || 0
+    worksheet.getRow(wetDaysRowNum).font = { bold: true }
+    worksheet.getRow(wetDaysRowNum).getCell(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF00B0F0' }
+    }
+
+    // Set column widths
+    worksheet.getColumn(1).width = 20 // Date/Statistics column
+    for (let i = 2; i <= locations.length + 1; i++) {
+      worksheet.getColumn(i).width = 18
+      worksheet.getColumn(i).alignment = { horizontal: 'center' }
+    }
+
+    // Add borders to all cells
+    const totalRows = worksheet.lastRow?.number || 1
+    for (let row = 3; row <= totalRows; row++) {
+      for (let col = 1; col <= locations.length + 1; col++) {
+        const cell = worksheet.getCell(row, col)
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        }
+      }
+    }
+
+    // Add notes section
+    worksheet.addRow([])
+    worksheet.addRow(['CATATAN:'])
+    const notesTitle = worksheet.getRow(worksheet.lastRow?.number || 0)
+    notesTitle.font = { bold: true }
+    
+    worksheet.addRow(['• Hari Hujan: Hari dengan curah hujan > 0 mm'])
+    worksheet.addRow(['• Hari Basah: Hari dengan curah hujan ≥ 1 mm'])
+    worksheet.addRow([`• Data periode: ${monthName} ${year}`])
+    worksheet.addRow([`• Tanggal export: ${new Date().toLocaleDateString('id-ID')}`])
+
+    // Generate Excel file buffer
+    const buffer = await workbook.xlsx.writeBuffer()
+    
+    // Create blob and download
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
+    
+    const defaultFilename = `laporan-curah-hujan-${monthName.toLowerCase()}-${year}.xlsx`
+    saveAs(blob, filename || defaultFilename)
+    
+    return true
+  } catch (error) {
+    console.error('Error exporting monthly Excel:', error)
+    throw new Error('Gagal mengekspor laporan bulanan ke Excel')
   }
 }
