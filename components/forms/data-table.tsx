@@ -141,7 +141,7 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
   return (
     <div className="space-y-6">
       {/* Filter Controls */}
-      {onFilterChange && <FilterControls onFilterChange={onFilterChange} />}
+      {onFilterChange && <FilterControls filters={filters} onFilterChange={onFilterChange} />}
       
       {/* Data Table */}
       <Card>

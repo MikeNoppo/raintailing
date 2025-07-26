@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -14,15 +14,23 @@ import { cn } from "@/lib/utils"
 import { useLocations } from "@/lib/hooks/useLocations"
 
 interface FilterControlsProps {
+  filters?: {
+    location?: string;
+    dateRange?: { from: Date; to: Date };
+  }
   onFilterChange: (filters: {
     location: string;
     dateRange?: { from: Date; to: Date };
   }) => void
 }
 
-export function FilterControls({ onFilterChange }: FilterControlsProps) {
-  const [location, setLocation] = useState("all")
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
+export function FilterControls({ filters, onFilterChange }: FilterControlsProps) {
+  // Use filters from parent component if provided, otherwise use defaults
+  const location = filters?.location || "all"
+  const dateRange = filters?.dateRange ? {
+    from: filters.dateRange.from,
+    to: filters.dateRange.to
+  } : undefined
   
   // Fetch locations from API
   const { locations, loading: locationsLoading, error: locationsError, refetch } = useLocations({ 
@@ -31,26 +39,37 @@ export function FilterControls({ onFilterChange }: FilterControlsProps) {
     refreshInterval: 0 // No auto-refresh 
   })
 
+  // Determine the actual value to use in Select
+  // Only fall back to "all" if the location genuinely doesn't exist after loading
+  const selectValue = locationsLoading
+    ? location // Preserve the location value during loading
+    : (location === "all" || locations.some(loc => loc.code === location))
+      ? location 
+      : "all"
+
+  // Sync filter when locations load and current location is invalid
+  useEffect(() => {
+    if (!locationsLoading && location !== "all" && !locations.some(loc => loc.code === location)) {
+      // If the selected location doesn't exist in the loaded locations, reset to "all"
+      onFilterChange({ location: "all", dateRange: dateRange ? { from: dateRange.from, to: dateRange.to } : undefined })
+    }
+  }, [locationsLoading, locations, location, dateRange, onFilterChange])
+
   const handleLocationChange = (value: string) => {
-    setLocation(value)
     const convertedRange = dateRange?.from && dateRange?.to ? { from: dateRange.from, to: dateRange.to } : undefined
     onFilterChange({ location: value, dateRange: convertedRange })
   }
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
-    setDateRange(range)
     const convertedRange = range?.from && range?.to ? { from: range.from, to: range.to } : undefined
     onFilterChange({ location, dateRange: convertedRange })
   }
 
   const clearDateRange = () => {
-    setDateRange(undefined)
     onFilterChange({ location, dateRange: undefined })
   }
 
   const resetAllFilters = () => {
-    setLocation("all")
-    setDateRange(undefined)
     onFilterChange({ location: "all", dateRange: undefined })
   }
 
@@ -96,31 +115,47 @@ export function FilterControls({ onFilterChange }: FilterControlsProps) {
                   </Button>
                 )}
               </div>
-              <Select value={location} onValueChange={handleLocationChange} disabled={locationsLoading}>
-                <SelectTrigger className="w-full bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-blue-500">
-                  <SelectValue placeholder={locationsLoading ? "Memuat lokasi..." : "Pilih lokasi"} />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-gray-200">
-                  <SelectItem value="all" className="hover:bg-gray-50">
-                    Semua Lokasi
-                  </SelectItem>
-                  {locationsError ? (
-                    <SelectItem value="error" disabled className="text-red-500">
-                      Error memuat lokasi
+              {locationsLoading ? (
+                // Show loading state
+                <Select value="all" disabled>
+                  <SelectTrigger className="w-full bg-white border-gray-300">
+                    <SelectValue placeholder="Memuat lokasi..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Memuat lokasi...</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                // Show actual select when loaded
+                <Select 
+                  value={selectValue} 
+                  onValueChange={handleLocationChange}
+                >
+                  <SelectTrigger className="w-full bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Pilih lokasi" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-gray-200">
+                    <SelectItem value="all" className="hover:bg-gray-50">
+                      Semua Lokasi
                     </SelectItem>
-                  ) : locations.length > 0 ? (
-                    locations.map((loc) => (
-                      <SelectItem key={loc.id} value={loc.code} className="hover:bg-gray-50">
-                        {loc.name} ({loc.code})
+                    {locationsError ? (
+                      <SelectItem value="error" disabled className="text-red-500">
+                        Error memuat lokasi
                       </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="no-locations" disabled className="hover:bg-gray-50">
-                      {locationsLoading ? "Memuat..." : "Tidak ada lokasi aktif"}
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+                    ) : locations.length > 0 ? (
+                      locations.map((loc) => (
+                        <SelectItem key={loc.id} value={loc.code} className="hover:bg-gray-50">
+                          {loc.name} ({loc.code})
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-locations" disabled className="hover:bg-gray-50">
+                        Tidak ada lokasi aktif
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             {/* Date Range Filter */}

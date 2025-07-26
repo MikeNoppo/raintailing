@@ -32,7 +32,7 @@ export function DashboardCharts({
   return (
     <>
       {/* Filter Controls */}
-      <FilterControls onFilterChange={onFilterChange} />
+      <FilterControls filters={filters} onFilterChange={onFilterChange} />
 
       {/* Area Chart */}
       <AreaChart 

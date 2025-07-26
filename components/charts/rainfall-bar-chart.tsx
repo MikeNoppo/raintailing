@@ -108,40 +108,13 @@ export function RainfallBarChart({
       const locationData = dataSource.filter(item => {
         if (!item.location) return false
         
-        // Direct match first
+        // Direct match first (exact match)
         if (item.location === selectedLocation) {
           return true
         }
         
-        // Map common location codes to names for matching
-        const locationMap: { [key: string]: string[] } = {
-          "GSW-PIT": ["Gosowong Pit", "gosowong pit", "GSW-PIT"],
-          "GSW-DP3": ["Gosowong Helipad (DP3)", "gosowong dp3", "GSW-DP3"],  
-          "TSF": ["Tailing dam (TSF)", "tsf", "TSF"],
-          "KNC-PRT": ["Kencana (Portal)", "knc port", "KNC-PRT"],
-          "TGR-PRT": ["Toguraci (Portal)", "tgr port", "TGR-PRT"],
-          "GSW-NTH": ["Gosowong North", "gosowong north", "GSW-NTH"]
-        }
-        
-        // Also create reverse mapping (name to code)
-        const reverseMap: { [key: string]: string } = {}
-        Object.entries(locationMap).forEach(([code, names]) => {
-          names.forEach(name => {
-            reverseMap[name.toLowerCase()] = code
-          })
-        })
-        
-        // Check if the selectedLocation matches any alias for this item's location
-        const aliases = locationMap[item.location] || []
-        const directMatch = aliases.some(alias => 
-          alias.toLowerCase() === selectedLocation.toLowerCase()
-        )
-        
-        // Also check reverse mapping
-        const selectedCode = reverseMap[selectedLocation.toLowerCase()]
-        const codeMatch = selectedCode === item.location
-        
-        if (directMatch || codeMatch) {
+        // Check case-insensitive match
+        if (item.location.toLowerCase() === selectedLocation.toLowerCase()) {
           return true
         }
         
@@ -236,7 +209,7 @@ export function RainfallBarChart({
       return []
     }
     
-    return data
+    return dataSource
   }
 
   const aggregatedData = getAggregatedData()
@@ -437,8 +410,19 @@ export function RainfallBarChart({
             <p className="text-xs mt-2">
               Lokasi: {selectedLocation || "Semua"} | 
               Data items: {dataSource.length} | 
-              Type: {type}
+              Type: {type} |
+              Aggregated: {aggregatedData.length}
             </p>
+            {useApiData && apiData && (
+              <p className="text-xs text-blue-600 mt-1">
+                API Data Count: {apiData.data?.length || 0}
+              </p>
+            )}
+            {selectedLocation && selectedLocation !== "all" && dataSource.length > 0 && (
+              <p className="text-xs text-yellow-600 mt-1">
+                Locations in data: {Array.from(new Set(dataSource.map(d => d.location))).join(", ")}
+              </p>
+            )}
           </div>
         </div>
       ) : (
