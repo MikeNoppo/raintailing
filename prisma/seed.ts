@@ -7,10 +7,10 @@ const prisma = new PrismaClient()
 async function main() {
     // Clear existing data before seeding
     console.log('🧹 Clearing existing data...')
-    await prisma.user.deleteMany({})
-    await prisma.location.deleteMany({})
-    await prisma.rainfallData.deleteMany({})
-    await prisma.systemConfig.deleteMany({})
+  await prisma.user.deleteMany({})
+  await prisma.location.deleteMany({})
+  await prisma.rainfallData.deleteMany({})
+  await prisma.systemConfig.deleteMany({})
 
     console.log('✅ Existing data cleared')
   console.log('🌱 Starting database seeding...')

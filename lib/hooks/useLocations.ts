@@ -11,8 +11,6 @@ export interface Location {
   updatedAt: string
   _count?: {
     rainfallData: number
-    monthlyAggregates: number
-    thresholds?: number
   }
   rainfallData?: {
     date: string

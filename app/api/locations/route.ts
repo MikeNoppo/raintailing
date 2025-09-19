@@ -20,8 +20,7 @@ export async function GET(request: NextRequest) {
       include: {
         _count: {
           select: {
-            rainfallData: true,
-            monthlyAggregates: true
+            rainfallData: true
           }
         }
       },
