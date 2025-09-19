@@ -11,8 +11,6 @@ async function main() {
     await prisma.location.deleteMany({})
     await prisma.rainfallData.deleteMany({})
     await prisma.systemConfig.deleteMany({})
-    await prisma.monthlyAggregate.deleteMany({})
-    await prisma.rainfallThreshold.deleteMany({})    
 
     console.log('✅ Existing data cleared')
   console.log('🌱 Starting database seeding...')
