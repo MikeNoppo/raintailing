@@ -13,7 +13,6 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { format } from 'date-fns'
 import { id as localeID } from 'date-fns/locale'
 import { CalendarIcon, Loader2 } from 'lucide-react'
-import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 
 interface RainfallEditDialogProps {
@@ -32,7 +31,6 @@ export function RainfallEditDialog({ id, open, onClose, onUpdated }: RainfallEdi
   const [date, setDate] = useState<Date | null>(null)
   const [locationId, setLocationId] = useState<string>('')
   const [rainfall, setRainfall] = useState<string>('')
-  const [notes, setNotes] = useState<string>('')
 
   // Populate when data loaded or id changes
   useEffect(() => {
@@ -40,7 +38,6 @@ export function RainfallEditDialog({ id, open, onClose, onUpdated }: RainfallEdi
       setDate(new Date(data.date))
       setLocationId(data.locationId || data.location?.id)
       setRainfall(data.rainfall.toString())
-      setNotes(data.notes || '')
     }
   }, [data, open])
 
@@ -49,11 +46,10 @@ export function RainfallEditDialog({ id, open, onClose, onUpdated }: RainfallEdi
     const changed = (
       (date && date.toISOString() !== new Date(data.date).toISOString()) ||
       locationId !== (data.locationId || data.location?.id) ||
-      (rainfall !== '' && parseFloat(rainfall) !== data.rainfall) ||
-      notes !== (data.notes || '')
+      (rainfall !== '' && parseFloat(rainfall) !== data.rainfall)
     )
     return changed
-  }, [date, locationId, rainfall, notes, data])
+  }, [date, locationId, rainfall, data])
 
   const handleSubmit = async () => {
     if (!id) return
@@ -71,7 +67,6 @@ export function RainfallEditDialog({ id, open, onClose, onUpdated }: RainfallEdi
         date: date.toISOString(),
         rainfall: value,
         locationId,
-        notes: notes.trim() === '' ? undefined : notes.trim()
       })
       toast.success('Data berhasil diperbarui')
       onUpdated?.()
@@ -139,15 +134,6 @@ export function RainfallEditDialog({ id, open, onClose, onUpdated }: RainfallEdi
                 min={0}
                 step="0.1"
                 placeholder="0"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Catatan (opsional)</Label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Tambahkan catatan"
-                rows={3}
               />
             </div>
           </div>
