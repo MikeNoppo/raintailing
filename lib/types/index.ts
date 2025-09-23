@@ -48,8 +48,6 @@ export interface Location {
   updatedAt?: Date | string
   _count?: {
     rainfallData?: number
-    monthlyAggregates?: number
-    thresholds?: number
   }
 }
 

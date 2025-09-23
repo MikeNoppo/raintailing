@@ -72,5 +72,3 @@ export function calculateTotalRainfallByLocation(
     rainfall: items.reduce((sum, item) => sum + item.rainfall, 0)
   }))
 }
-
-

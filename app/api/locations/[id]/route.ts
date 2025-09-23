@@ -18,7 +18,7 @@ export async function GET(
       include: {
         _count: {
           select: {
-            rainfallData: true,
+            rainfallData: true
           }
         },
         rainfallData: {
@@ -142,7 +142,7 @@ export async function DELETE(
       include: {
         _count: {
           select: {
-            rainfallData: true,
+            rainfallData: true
           }
         }
       }
@@ -153,12 +153,10 @@ export async function DELETE(
     }
 
     // Check if location has related data
-    if (location._count.rainfallData > 0 ) {
+    if (location._count.rainfallData > 0) {
       return NextResponse.json({
         error: 'Cannot delete location with existing rainfall data. Set status to INACTIVE instead.',
-        details: {
-          rainfallRecords: location._count.rainfallData,
-        }
+        details: { rainfallRecords: location._count.rainfallData }
       }, { status: 409 })
     }
 
