@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useMemo } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -80,8 +80,28 @@ export function RainfallEditDialog({ id, open, onClose, onUpdated }: RainfallEdi
     onClose()
   }
 
+  // Local confirm dialog state
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  const requestClose = () => {
+    if (isDirty && !isUpdating) {
+      setShowConfirm(true)
+      return
+    }
+    resetAndClose()
+  }
+
+  const handleConfirmDiscard = () => {
+    setShowConfirm(false)
+    resetAndClose()
+  }
+
+  const handleCancelDiscard = () => {
+    setShowConfirm(false)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) resetAndClose() }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) requestClose() }}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Data Curah Hujan</DialogTitle>
@@ -139,12 +159,31 @@ export function RainfallEditDialog({ id, open, onClose, onUpdated }: RainfallEdi
           </div>
         )}
         <DialogFooter className="flex gap-2 pt-2">
-          <Button variant="outline" onClick={resetAndClose} disabled={isUpdating}>Batal</Button>
-          <Button onClick={handleSubmit} disabled={!isDirty || isUpdating || isLoading}>
+          <Button variant="outline" onClick={requestClose} disabled={isUpdating}>Batal</Button>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={!isDirty || isUpdating || isLoading}
+            title={!isDirty && !isUpdating && !isLoading ? 'Tidak ada perubahan' : ''}
+          >
             {isUpdating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Simpan Perubahan
           </Button>
         </DialogFooter>
       </DialogContent>
+      {/* Nested confirmation dialog */}
+      <Dialog open={showConfirm} onOpenChange={(o) => { if (!o) setShowConfirm(false) }}>
+        <DialogContent className="max-w-sm" showCloseButton={!isUpdating}>
+          <DialogHeader>
+            <DialogTitle>Batalkan Perubahan?</DialogTitle>
+            <DialogDescription>
+              Anda memiliki perubahan yang belum disimpan. Jika keluar sekarang, perubahan akan hilang.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="pt-2">
+            <Button variant="outline" onClick={handleCancelDiscard} disabled={isUpdating}>Kembali</Button>
+            <Button variant="destructive" onClick={handleConfirmDiscard} disabled={isUpdating}>Buang Perubahan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }
