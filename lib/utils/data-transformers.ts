@@ -1,4 +1,5 @@
 import type { RainfallData, RainfallDataDB } from '@/lib/types'
+import { formatDateToLocalISO } from '@/lib/utils'
 
 // Transform database format to chart format
 export function transformRainfallDataForCharts(
@@ -56,8 +57,8 @@ export function getLastNDaysDateRange(days: number): { startDate: string; endDat
   startDate.setDate(endDate.getDate() - days)
 
   return {
-    startDate: startDate.toISOString().split('T')[0],
-    endDate: endDate.toISOString().split('T')[0]
+    startDate: formatDateToLocalISO(startDate) ?? '',
+    endDate: formatDateToLocalISO(endDate) ?? ''
   }
 }
 

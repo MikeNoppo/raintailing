@@ -10,6 +10,7 @@ import { useRainfallData, useRainfallMutations } from "@/lib/hooks"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { FilterControls } from "@/components/forms/filter-controls"
 import { MonthYearSelector } from "@/components/forms/month-year-selector"
+import { formatDateToLocalISO } from "@/lib/utils"
 
 interface DataTableProps {
   filters?: {
@@ -36,8 +37,8 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
   const apiFilters = useMemo(() => {
     const filters_obj = {
       location: filters?.location && filters.location !== 'all' ? filters.location : undefined,
-      startDate: filters?.dateRange?.from?.toISOString().split('T')[0],
-      endDate: filters?.dateRange?.to?.toISOString().split('T')[0],
+      startDate: formatDateToLocalISO(filters?.dateRange?.from),
+      endDate: formatDateToLocalISO(filters?.dateRange?.to),
       page: currentPage,
       limit: pageSize,
       sortBy,
@@ -46,7 +47,7 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
     
     // Remove undefined values
     const cleanFilters = Object.fromEntries(
-      Object.entries(filters_obj).filter(([v]) => v !== undefined)
+      Object.entries(filters_obj).filter(([, value]) => value !== undefined)
     )
     
     return cleanFilters
