@@ -73,30 +73,3 @@ export function calculateTotalRainfallByLocation(
     rainfall: items.reduce((sum, item) => sum + item.rainfall, 0)
   }))
 }
-
-// Calculate monthly aggregates
-export function calculateMonthlyAggregates(
-  data: RainfallData[]
-): Array<{ month: string; rainfall: number; count: number; average: number }> {
-  const monthlyData = data.reduce((acc, item) => {
-    const date = new Date(item.date)
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-    
-    if (!acc[monthKey]) {
-      acc[monthKey] = { total: 0, count: 0, items: [] }
-    }
-    
-    acc[monthKey].total += item.rainfall
-    acc[monthKey].count += 1
-    acc[monthKey].items.push(item)
-    
-    return acc
-  }, {} as Record<string, { total: number; count: number; items: RainfallData[] }>)
-
-  return Object.entries(monthlyData).map(([month, stats]) => ({
-    month,
-    rainfall: stats.total,
-    count: stats.count,
-    average: stats.total / stats.count
-  })).sort((a, b) => a.month.localeCompare(b.month))
-}

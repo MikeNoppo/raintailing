@@ -1,16 +1,17 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Download, ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
+import { Download, ChevronLeft, ChevronRight, Trash2, Pencil } from "lucide-react"
 import { useRainfallData, useRainfallMutations } from "@/lib/hooks"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { FilterControls } from "@/components/forms/filter-controls"
 import { MonthYearSelector } from "@/components/forms/month-year-selector"
 import { formatDateToLocalISO } from "@/lib/utils"
+import { RainfallEditDialog } from '@/components/forms/rainfall-edit-dialog'
 
 interface DataTableProps {
   filters?: {
@@ -35,7 +36,7 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
 
   // API data fetching
   const apiFilters = useMemo(() => {
-    const filters_obj = {
+    const filters_obj: Record<string, any> = {
       location: filters?.location && filters.location !== 'all' ? filters.location : undefined,
       startDate: formatDateToLocalISO(filters?.dateRange?.from),
       endDate: formatDateToLocalISO(filters?.dateRange?.to),
@@ -53,6 +54,11 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
     return cleanFilters
   }, [filters, currentPage, pageSize, sortBy, sortOrder])
 
+  // Reset page when external filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters?.location, filters?.dateRange?.from, filters?.dateRange?.to])
+
   const { 
     data: apiResponse, 
     error: apiError, 
@@ -61,6 +67,10 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
   } = useRainfallData(apiFilters)
 
   const { deleteRainfallData, isDeleting } = useRainfallMutations()
+
+  // Edit dialog state
+  const [editId, setEditId] = useState<string | null>(null)
+  const [showEditDialog, setShowEditDialog] = useState(false)
   
   // Check user authentication and role
   const { user, isAuthenticated } = useAuth()
@@ -259,6 +269,15 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
                           <Button
                             variant="ghost"
                             size="sm"
+                            aria-label="Edit"
+                            onClick={() => { setEditId(row.id); setShowEditDialog(true) }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label="Delete"
                             onClick={() => handleDelete(row.id)}
                             disabled={isDeleting}
                           >
@@ -331,6 +350,12 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
       open={showExportDialog}
       onClose={() => setShowExportDialog(false)}
       currentLocation={filters?.location}
+    />
+    <RainfallEditDialog 
+      id={editId}
+      open={showEditDialog}
+      onClose={() => { setShowEditDialog(false); setEditId(null) }}
+      onUpdated={() => refreshData()}
     />
     </div>
   )
