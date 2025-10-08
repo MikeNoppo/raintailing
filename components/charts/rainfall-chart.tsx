@@ -15,6 +15,7 @@ import {
 import { Loader2 } from "lucide-react"
 import { useRainfallData } from "@/lib/hooks"
 import { transformRainfallDataForCharts } from "@/lib/utils/data-transformers"
+import { format } from "date-fns"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
 
@@ -48,8 +49,8 @@ export function RainfallChart({
   } = useRainfallData(
     useApiData ? {
       location: selectedLocation,
-      startDate: dateRange?.start,
-      endDate: dateRange?.end,
+  startDate: dateRange?.start,
+  endDate: dateRange?.end,
       sortBy: 'date',
       order: 'asc',
       limit: 500
