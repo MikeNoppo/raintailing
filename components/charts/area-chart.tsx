@@ -14,6 +14,7 @@ import {
 import { Loader2 } from "lucide-react"
 import { useRainfallData } from "@/lib/hooks"
 import { useLocations } from "@/lib/hooks/useLocations"
+import { format } from "date-fns"
 
 // Default locations based on location-management.tsx
 const defaultLocations: Location[] = [
@@ -97,8 +98,8 @@ export function AreaChart({
   } = useRainfallData(
     useApiData ? {
       location: filteredLocation !== "all" ? filteredLocation : undefined,
-      startDate: dateRange?.from?.toISOString().split('T')[0],
-      endDate: dateRange?.to?.toISOString().split('T')[0],
+  startDate: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+  endDate: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
       limit: 500, // Increase limit for chart data
       sortBy: 'date',
       order: 'asc'

@@ -6,6 +6,7 @@ import { RainfallBarChart } from "@/components/charts/rainfall-bar-chart"
 import { RainfallClassificationChart, RainfallClassificationSummary } from "@/components/charts/rainfall-classification-chart"
 import { AreaChart } from "@/components/charts/area-chart"
 import { FilterControls } from "@/components/forms/filter-controls"
+import { format } from "date-fns"
 
 interface DashboardChartsProps {
   filters: {
@@ -25,8 +26,8 @@ export function DashboardCharts({
   useApiData = false
 }: DashboardChartsProps) {
   const dateRange = filters.dateRange ? {
-    start: filters.dateRange.from.toISOString().split('T')[0],
-    end: filters.dateRange.to.toISOString().split('T')[0]
+    start: format(filters.dateRange.from, 'yyyy-MM-dd'),
+    end: format(filters.dateRange.to, 'yyyy-MM-dd')
   } : undefined
 
   return (

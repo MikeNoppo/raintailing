@@ -7,6 +7,7 @@ import { useRainfallData } from "@/lib/hooks"
 import { 
   transformRainfallDataForCharts
 } from "@/lib/utils/data-transformers"
+import { format } from "date-fns"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
@@ -62,8 +63,8 @@ export function RainfallBarChart({
   } = useRainfallData(
     useApiData ? {
       location: type === "location-total" ? undefined : selectedLocation,
-      startDate: dateRange?.start,
-      endDate: dateRange?.end,
+  startDate: dateRange?.start,
+  endDate: dateRange?.end,
       sortBy: 'date',
       order: 'asc',
       limit: 1000

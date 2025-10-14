@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/hooks/useAuth"
 import { FilterControls } from "@/components/forms/filter-controls"
 import { MonthYearSelector } from "@/components/forms/month-year-selector"
 import { RainfallEditDialog } from '@/components/forms/rainfall-edit-dialog'
+import { format } from "date-fns"
 
 interface DataTableProps {
   filters?: {
@@ -37,8 +38,8 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
   const apiFilters = useMemo(() => {
     const filters_obj: Record<string, any> = {
       location: filters?.location && filters.location !== 'all' ? filters.location : undefined,
-      startDate: filters?.dateRange?.from ? filters.dateRange.from.toISOString().split('T')[0] : undefined,
-      endDate: filters?.dateRange?.to ? filters.dateRange.to.toISOString().split('T')[0] : undefined,
+  startDate: filters?.dateRange?.from ? format(filters.dateRange.from, 'yyyy-MM-dd') : undefined,
+  endDate: filters?.dateRange?.to ? format(filters.dateRange.to, 'yyyy-MM-dd') : undefined,
       page: currentPage,
       limit: pageSize,
       sortBy,
