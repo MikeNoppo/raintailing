@@ -35,19 +35,15 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
   const [showExportDialog, setShowExportDialog] = useState(false)
 
   // API data fetching
-  const apiFilters = useMemo(() => {
-    const filters_obj: Record<string, any> = {
-      location: filters?.location && filters.location !== 'all' ? filters.location : undefined,
-  startDate: filters?.dateRange?.from ? format(filters.dateRange.from, 'yyyy-MM-dd') : undefined,
-  endDate: filters?.dateRange?.to ? format(filters.dateRange.to, 'yyyy-MM-dd') : undefined,
-      page: currentPage,
-      limit: pageSize,
-      sortBy,
-      order: sortOrder
-    }
-    // Remove undefined
-    return Object.fromEntries(Object.entries(filters_obj).filter(([_, v]) => v !== undefined))
-  }, [filters, currentPage, pageSize, sortBy, sortOrder])
+  const apiFilters = useMemo(() => ({
+    location: filters?.location && filters.location !== 'all' ? filters.location : undefined,
+    startDate: filters?.dateRange?.from ? format(filters.dateRange.from, 'yyyy-MM-dd') : undefined,
+    endDate: filters?.dateRange?.to ? format(filters.dateRange.to, 'yyyy-MM-dd') : undefined,
+    page: currentPage,
+    limit: pageSize,
+    sortBy,
+    order: sortOrder
+  }), [filters, currentPage, pageSize, sortBy, sortOrder])
 
   // Reset page when external filters change
   useEffect(() => {
@@ -298,8 +294,8 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
         {/* Loading skeleton */}
         {apiLoading && (
           <div className="space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center space-x-4">
+            {Array.from({ length: 5 }, (_, index) => index).map((index) => (
+              <div key={index} className="flex items-center space-x-4">
                 <div className="h-4 bg-muted animate-pulse rounded w-1/4"></div>
                 <div className="h-4 bg-muted animate-pulse rounded w-1/6"></div>
                 <div className="h-4 bg-muted animate-pulse rounded w-1/4"></div>
