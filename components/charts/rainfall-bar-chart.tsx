@@ -7,7 +7,6 @@ import { useRainfallData } from "@/lib/hooks"
 import { 
   transformRainfallDataForCharts
 } from "@/lib/utils/data-transformers"
-import { format } from "date-fns"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
