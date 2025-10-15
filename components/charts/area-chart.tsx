@@ -14,7 +14,7 @@ import {
 import { Loader2 } from "lucide-react"
 import { useRainfallData } from "@/lib/hooks"
 import { useLocations } from "@/lib/hooks/useLocations"
-import { format } from "date-fns"
+import { endOfDay, format, startOfDay } from "date-fns"
 
 // Default locations based on location-management.tsx
 const defaultLocations: Location[] = [
@@ -173,21 +173,26 @@ export function AreaChart({
 
   // Filter chart data - ALWAYS call this hook
   const filteredData = React.useMemo(() => {
+    const filterStart = dateRange?.from ? startOfDay(dateRange.from) : undefined
+    const filterEnd = dateRange?.to ? endOfDay(dateRange.to) : undefined
+
     const filtered = chartDataWithLocations.filter((item) => {
-      const date = new Date(item.date)
-      
-      // Apply date range filter from filter controls if provided
-      if (dateRange?.from && dateRange?.to) {
-        return date >= dateRange.from && date <= dateRange.to
+      const date = startOfDay(new Date(item.date))
+
+      if (filterStart && date < filterStart) {
+        return false
       }
-      
+
+      if (filterEnd && date > filterEnd) {
+        return false
+      }
+
       // If using API data or prop data, don't apply default date filter
       if (dataSource && dataSource.length > 0) {
         return true
       }
-      
-      // If no date filter and using generated data, show last 90 days by default
-      const referenceDate = new Date("2024-06-30") // Use a fixed reference date
+
+      const referenceDate = new Date("2024-06-30")
       const startDate = new Date(referenceDate)
       startDate.setDate(startDate.getDate() - 90)
       return date >= startDate
