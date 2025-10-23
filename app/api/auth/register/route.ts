@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextRequest } from 'next/server'
 import bcrypt from 'bcryptjs'
+
+import { prisma } from '@/lib/prisma'
+import { createdResponse, errorResponse } from '@/lib/api/responses'
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,27 +10,18 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!username || !password) {
-      return NextResponse.json(
-        { error: 'Username and password are required' },
-        { status: 400 }
-      )
+      return errorResponse('Username and password are required', { status: 400 })
     }
 
     // Validate username format (only alphanumeric and underscore)
     const usernameRegex = /^[a-zA-Z0-9_]+$/
     if (!usernameRegex.test(username)) {
-      return NextResponse.json(
-        { error: 'Username can only contain letters, numbers, and underscores' },
-        { status: 400 }
-      )
+      return errorResponse('Username can only contain letters, numbers, and underscores', { status: 400 })
     }
 
     // Validate password length
     if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters long' },
-        { status: 400 }
-      )
+      return errorResponse('Password must be at least 6 characters long', { status: 400 })
     }
 
     // Check if username already exists
@@ -37,10 +30,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'Username already exists' },
-        { status: 400 }
-      )
+      return errorResponse('Username already exists', { status: 400 })
     }
 
     // Hash password
@@ -63,16 +53,15 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
-      message: 'User created successfully',
-      user
-    }, { status: 201 })
+    return createdResponse(
+      {
+        user
+      },
+      { message: 'User created successfully' }
+    )
 
   } catch (error) {
     console.error('Registration error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return errorResponse('Internal server error')
   }
 }
