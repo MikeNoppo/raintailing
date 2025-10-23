@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
+
+import { createdResponse, errorResponse, successResponse } from '@/lib/api/responses'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
@@ -87,8 +89,8 @@ export async function GET(request: NextRequest) {
       take: limit
     })
 
-    return NextResponse.json({
-      data,
+    return successResponse({
+      records: data,
       pagination: {
         page,
         limit,
@@ -101,10 +103,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Get rainfall data error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return errorResponse('Internal server error')
   }
 }
 
@@ -113,7 +112,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return errorResponse('Unauthorized', { status: 401 })
     }
 
     // Only ADMIN can create rainfall data
@@ -123,28 +122,19 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
-        { status: 403 }
-      )
+      return errorResponse('Forbidden - Admin access required', { status: 403 })
     }
 
     const { date, rainfall, locationId, notes } = await request.json()
 
     // Validate required fields
     if (!date || rainfall === undefined || !locationId) {
-      return NextResponse.json(
-        { error: 'Missing required fields: date, rainfall, locationId' },
-        { status: 400 }
-      )
+      return errorResponse('Missing required fields: date, rainfall, locationId', { status: 400 })
     }
 
     // Validate rainfall value
     if (rainfall < 0) {
-      return NextResponse.json(
-        { error: 'Rainfall value must be >= 0' },
-        { status: 400 }
-      )
+      return errorResponse('Rainfall value must be >= 0', { status: 400 })
     }
 
     // Validate location exists and is active
@@ -153,17 +143,11 @@ export async function POST(request: NextRequest) {
     })
 
     if (!location) {
-      return NextResponse.json(
-        { error: 'Location not found' },
-        { status: 404 }
-      )
+      return errorResponse('Location not found', { status: 404 })
     }
 
     if (location.status !== 'ACTIVE') {
-      return NextResponse.json(
-        { error: 'Location is not active' },
-        { status: 400 }
-      )
+      return errorResponse('Location is not active', { status: 400 })
     }
 
     // Check for duplicate entry (same date and location)
@@ -175,10 +159,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingEntry) {
-      return NextResponse.json(
-        { error: 'Rainfall data for this date and location already exists' },
-        { status: 409 }
-      )
+      return errorResponse('Rainfall data for this date and location already exists', { status: 409 })
     }
 
     // Create rainfall data
@@ -209,16 +190,12 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
-      message: 'Rainfall data created successfully',
-      data: rainfallData
-    }, { status: 201 })
+    return createdResponse(rainfallData, {
+      message: 'Rainfall data created successfully'
+    })
 
   } catch (error) {
     console.error('Create rainfall data error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return errorResponse('Internal server error')
   }
 }

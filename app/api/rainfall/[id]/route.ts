@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
+
+import { errorResponse, successResponse } from '@/lib/api/responses'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
@@ -40,20 +42,14 @@ export async function GET(
     })
 
     if (!rainfallData) {
-      return NextResponse.json(
-        { error: 'Rainfall data not found' },
-        { status: 404 }
-      )
+      return errorResponse('Rainfall data not found', { status: 404 })
     }
 
-    return NextResponse.json({ data: rainfallData })
+    return successResponse(rainfallData)
 
   } catch (error) {
     console.error('Get rainfall data error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return errorResponse('Internal server error')
   }
 }
 
@@ -65,7 +61,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return errorResponse('Unauthorized', { status: 401 })
     }
 
     // Only ADMIN can update rainfall data
@@ -75,10 +71,7 @@ export async function PUT(
     })
 
     if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
-        { status: 403 }
-      )
+      return errorResponse('Forbidden - Admin access required', { status: 403 })
     }
 
     const { id } = await params
@@ -90,18 +83,12 @@ export async function PUT(
     })
 
     if (!existingData) {
-      return NextResponse.json(
-        { error: 'Rainfall data not found' },
-        { status: 404 }
-      )
+      return errorResponse('Rainfall data not found', { status: 404 })
     }
 
     // Validate rainfall value if provided
     if (rainfall !== undefined && rainfall < 0) {
-      return NextResponse.json(
-        { error: 'Rainfall value must be >= 0' },
-        { status: 400 }
-      )
+      return errorResponse('Rainfall value must be >= 0', { status: 400 })
     }
 
     // Validate location exists and is active if location is being changed
@@ -111,17 +98,11 @@ export async function PUT(
       })
 
       if (!location) {
-        return NextResponse.json(
-          { error: 'Location not found' },
-          { status: 404 }
-        )
+        return errorResponse('Location not found', { status: 404 })
       }
 
       if (location.status !== 'ACTIVE') {
-        return NextResponse.json(
-          { error: 'Location is not active' },
-          { status: 400 }
-        )
+        return errorResponse('Location is not active', { status: 400 })
       }
 
       // Check for duplicate entry if date or location is changing
@@ -140,10 +121,7 @@ export async function PUT(
         })
 
         if (duplicateEntry) {
-          return NextResponse.json(
-            { error: 'Rainfall data for this date and location already exists' },
-            { status: 409 }
-          )
+          return errorResponse('Rainfall data for this date and location already exists', { status: 409 })
         }
       }
     }
@@ -177,17 +155,13 @@ export async function PUT(
       }
     })
 
-    return NextResponse.json({
-      message: 'Rainfall data updated successfully',
-      data: updatedData
+    return successResponse(updatedData, {
+      message: 'Rainfall data updated successfully'
     })
 
   } catch (error) {
     console.error('Update rainfall data error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return errorResponse('Internal server error')
   }
 }
 
@@ -199,7 +173,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return errorResponse('Unauthorized', { status: 401 })
     }
 
     // Only ADMIN can delete rainfall data
@@ -209,10 +183,7 @@ export async function DELETE(
     })
 
     if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
-        { status: 403 }
-      )
+      return errorResponse('Forbidden - Admin access required', { status: 403 })
     }
 
     const { id } = await params
@@ -223,10 +194,7 @@ export async function DELETE(
     })
 
     if (!existingData) {
-      return NextResponse.json(
-        { error: 'Rainfall data not found' },
-        { status: 404 }
-      )
+      return errorResponse('Rainfall data not found', { status: 404 })
     }
 
     // Delete rainfall data
@@ -234,15 +202,12 @@ export async function DELETE(
       where: { id }
     })
 
-    return NextResponse.json({
+    return successResponse({ id }, {
       message: 'Rainfall data deleted successfully'
     })
 
   } catch (error) {
     console.error('Delete rainfall data error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return errorResponse('Internal server error')
   }
 }

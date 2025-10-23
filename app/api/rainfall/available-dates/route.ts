@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+
+import { successResponse, errorResponse } from '@/lib/api/responses'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/rainfall/available-dates - Get available year/month combinations (PUBLIC ACCESS)
@@ -60,16 +62,13 @@ export async function GET(request: NextRequest) {
       return b.month - a.month // Month descending
     })
 
-    return NextResponse.json({
+    return successResponse({
       months,
       total: availableDates.length
     })
 
   } catch (error) {
     console.error('Get available dates error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return errorResponse('Internal server error')
   }
 }
