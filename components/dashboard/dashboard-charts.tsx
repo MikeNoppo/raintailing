@@ -6,7 +6,7 @@ import { RainfallBarChart } from "@/components/charts/rainfall-bar-chart"
 import { RainfallClassificationChart, RainfallClassificationSummary } from "@/components/charts/rainfall-classification-chart"
 import { AreaChart } from "@/components/charts/area-chart"
 import { FilterControls } from "@/components/forms/filter-controls"
-import { format } from "date-fns"
+import { formatDateToLocalISO } from "@/lib/utils"
 
 interface DashboardChartsProps {
   filters: {
@@ -25,10 +25,9 @@ export function DashboardCharts({
   onFilterChange,
   useApiData = false
 }: DashboardChartsProps) {
-  const dateRange = filters.dateRange ? {
-    start: format(filters.dateRange.from, 'yyyy-MM-dd'),
-    end: format(filters.dateRange.to, 'yyyy-MM-dd')
-  } : undefined
+  const start = filters.dateRange ? formatDateToLocalISO(filters.dateRange.from) : undefined
+  const end = filters.dateRange ? formatDateToLocalISO(filters.dateRange.to) : undefined
+  const dateRange = start && end ? { start, end } : undefined
 
   return (
     <>
