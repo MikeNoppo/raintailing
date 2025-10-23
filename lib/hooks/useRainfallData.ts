@@ -228,16 +228,29 @@ export function useRainfallMutations() {
         throw new Error(result.error || 'Failed to import rainfall data')
       }
 
-      // Show success/warning based on results
-      if (result.results.failed === 0) {
-        toast.success(`Successfully imported ${result.results.success} records`)
+      const summary = result?.data as {
+        imported?: number
+        totalRows?: number
+        skipped?: number
+        failed?: number
+      }
+
+      if (!summary || typeof summary.imported !== 'number') {
+        toast.success('Rainfall data imported successfully')
+        return summary
+      }
+
+      const failedCount = typeof summary.failed === 'number' ? summary.failed : summary.skipped || 0
+
+      if (failedCount === 0) {
+        toast.success(`Successfully imported ${summary.imported} records`)
       } else {
         toast.warning(
-          `Import completed with warnings: ${result.results.success} successful, ${result.results.failed} failed`
+          `Import completed with warnings: ${summary.imported} successful, ${failedCount} failed`
         )
       }
 
-      return result.results
+      return summary
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to import rainfall data'
       toast.error(message)

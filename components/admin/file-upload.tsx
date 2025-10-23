@@ -65,8 +65,11 @@ export function FileUpload() {
       const result = await response.json()
 
       if (response.ok && result.success) {
-        const skippedMessage = result.skipped > 0 ? ` (${result.skipped} data duplikat dilewati)` : ''
-        toast.success(`File berhasil diproses! ${result.imported || 0} data berhasil diimport dari ${result.totalRows || 0} baris${skippedMessage}.`)
+        const summary = result.data
+        const skippedMessage = summary?.skipped > 0 ? ` (${summary.skipped} data duplikat dilewati)` : ''
+        toast.success(
+          `File berhasil diproses! ${summary?.imported || 0} data berhasil diimport dari ${summary?.totalRows || 0} baris${skippedMessage}.`
+        )
         setSelectedFile(null)
         
         // Reset file input
