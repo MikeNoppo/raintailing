@@ -62,8 +62,8 @@ export function RainfallBarChart({
   } = useRainfallData(
     useApiData ? {
       location: type === "location-total" ? undefined : selectedLocation,
-      startDate: dateRange?.start,
-      endDate: dateRange?.end,
+  startDate: dateRange?.start,
+  endDate: dateRange?.end,
       sortBy: 'date',
       order: 'asc',
       limit: 1000

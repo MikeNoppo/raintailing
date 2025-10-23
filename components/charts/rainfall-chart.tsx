@@ -48,8 +48,8 @@ export function RainfallChart({
   } = useRainfallData(
     useApiData ? {
       location: selectedLocation,
-      startDate: dateRange?.start,
-      endDate: dateRange?.end,
+  startDate: dateRange?.start,
+  endDate: dateRange?.end,
       sortBy: 'date',
       order: 'asc',
       limit: 500
