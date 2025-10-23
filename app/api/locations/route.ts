@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { LocationStatus } from '@prisma/client'
+
+import { successResponse, createdResponse, errorResponse } from '@/lib/api/responses'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { LocationStatus } from '@prisma/client'
 
 // GET /api/locations - Get all locations (PUBLIC ACCESS)
 export async function GET(request: NextRequest) {
@@ -30,17 +32,14 @@ export async function GET(request: NextRequest) {
       ]
     })
 
-    return NextResponse.json({ 
-      success: true,
-      data: locations,
-      count: locations.length
+    return successResponse(locations, {
+      meta: {
+        count: locations.length
+      }
     })
   } catch (error) {
     console.error('Error fetching locations:', error)
-    return NextResponse.json(
-      { error: 'Internal Server Error' }, 
-      { status: 500 }
-    )
+    return errorResponse('Internal Server Error')
   }
 }
 
@@ -49,12 +48,12 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return errorResponse('Unauthorized', { status: 401 })
     }
 
     // Only ADMIN can create locations
     if (session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
+      return errorResponse('Forbidden - Admin access required', { status: 403 })
     }
 
     const body = await request.json()
@@ -62,10 +61,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!name || !code) {
-      return NextResponse.json(
-        { error: 'Name and code are required' }, 
-        { status: 400 }
-      )
+      return errorResponse('Name and code are required', { status: 400 })
     }
 
     // Check if location code already exists
@@ -74,10 +70,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingLocation) {
-      return NextResponse.json(
-        { error: 'Location code already exists' }, 
-        { status: 409 }
-      )
+      return errorResponse('Location code already exists', { status: 409 })
     }
 
     // Create new location
@@ -90,17 +83,12 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
-      success: true,
-      data: location,
+    return createdResponse(location, {
       message: 'Location created successfully'
-    }, { status: 201 })
+    })
 
   } catch (error) {
     console.error('Error creating location:', error)
-    return NextResponse.json(
-      { error: 'Internal Server Error' }, 
-      { status: 500 }
-    )
+    return errorResponse('Internal Server Error')
   }
 }
