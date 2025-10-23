@@ -57,8 +57,8 @@ export function RainfallChart({
   )
 
   // Determine data source
-  const dataSource = useApiData && apiData?.data 
-    ? transformRainfallDataForCharts(apiData.data)
+  const dataSource = useApiData && apiData?.data?.records 
+    ? transformRainfallDataForCharts(apiData.data.records)
     : data
 
   // Show loading state

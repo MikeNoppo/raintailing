@@ -107,8 +107,8 @@ export function AreaChart({
   )
 
   // Use API data if available, otherwise fallback to prop data or default locations
-  const dataSource = useApiData && apiData?.data 
-    ? apiData.data.map(item => ({
+  const dataSource = useApiData && apiData?.data?.records 
+    ? apiData.data.records.map(item => ({
         date: item.date,
         rainfall: item.rainfall,
         location: item.location.code

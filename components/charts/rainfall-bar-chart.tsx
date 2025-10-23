@@ -71,8 +71,8 @@ export function RainfallBarChart({
   )
 
   // Determine data source
-  const dataSource = useApiData && apiData?.data 
-    ? transformRainfallDataForCharts(apiData.data)
+  const dataSource = useApiData && apiData?.data?.records 
+    ? transformRainfallDataForCharts(apiData.data.records)
     : data
 
   // Show loading state
@@ -415,7 +415,7 @@ export function RainfallBarChart({
             </p>
             {useApiData && apiData && (
               <p className="text-xs text-blue-600 mt-1">
-                API Data Count: {apiData.data?.length || 0}
+                API Data Count: {apiData.data?.records.length || 0}
               </p>
             )}
             {selectedLocation && selectedLocation !== "all" && dataSource.length > 0 && (
