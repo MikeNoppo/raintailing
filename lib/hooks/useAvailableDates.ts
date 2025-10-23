@@ -1,13 +1,20 @@
 import useSWR from 'swr'
 
 // Types
-interface AvailableDatesResponse {
+interface AvailableDatesPayload {
   months: Array<{
     year: number
     month: number
     count: number
   }>
   total: number
+}
+
+interface AvailableDatesResponse {
+  success: boolean
+  data: AvailableDatesPayload
+  message?: string
+  meta?: Record<string, unknown>
 }
 
 interface AvailableDatesFilters {
@@ -47,8 +54,8 @@ export function useAvailableDates(filters: AvailableDatesFilters = {}) {
   )
 
   return {
-    data: data?.months || [],
-    total: data?.total || 0,
+    data: data?.data?.months || [],
+    total: data?.data?.total || 0,
     error,
     isLoading,
     refetch: mutate,

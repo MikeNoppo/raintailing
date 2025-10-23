@@ -94,8 +94,8 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
 
   // Transform API data
   const tableData = useMemo(() => {
-    if (apiResponse?.data) {
-      return apiResponse.data.map(item => ({
+    if (apiResponse?.data?.records) {
+      return apiResponse.data.records.map(item => ({
         id: item.id,
         date: item.date,
         rainfall: item.rainfall,
@@ -109,7 +109,7 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
   }, [apiResponse])
 
   // Pagination info
-  const pagination = apiResponse?.pagination || {
+  const pagination = apiResponse?.data?.pagination || {
     page: 1,
     limit: 0,
     total: 0,

@@ -76,8 +76,8 @@ export function DashboardStats({ data: propData, selectedLocation, useApiData = 
   })
 
   // Use API data if available, otherwise fallback to prop data
-  const data = useApiData && apiData?.data 
-    ? apiData.data.map(item => ({
+  const data = useApiData && apiData?.data?.records 
+    ? apiData.data.records.map(item => ({
         date: item.date,
         rainfall: item.rainfall,
         location: item.location.code

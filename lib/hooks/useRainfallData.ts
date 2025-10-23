@@ -4,33 +4,34 @@ import { toast } from 'sonner'
 
 // Types
 interface RainfallRecord {
+  id: string
+  date: string
+  rainfall: number
+  notes?: string
+  location: {
     id: string
-    date: string
-    rainfall: number
-    notes?: string
-    location: {
-      id: string
-      code: string
-      name: string
-      status: string
-    }
-    user?: {
-      id: string
-      username: string
-      name?: string
-    }
-    createdAt: string
-    updatedAt: string
+    code: string
+    name: string
+    status: string
   }
+  user?: {
+    id: string
+    username: string
+    name?: string
+  }
+  createdAt: string
+  updatedAt: string
+}
 
 interface RainfallPagination {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-    hasNext: boolean
-    hasPrev: boolean
-  }
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+  hasNext: boolean
+  hasPrev: boolean
+}
+
 interface RainfallDataResponse {
   success: boolean
   data: {
@@ -40,7 +41,6 @@ interface RainfallDataResponse {
   message?: string
   meta?: Record<string, unknown>
 }
-
 
 interface RainfallFilters {
   location?: string
