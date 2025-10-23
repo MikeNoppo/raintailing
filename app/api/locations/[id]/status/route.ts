@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { LocationStatus } from '@prisma/client'
+
+import { successResponse, errorResponse } from '@/lib/api/responses'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { LocationStatus } from '@prisma/client'
 
 // PATCH /api/locations/[id]/status - Toggle location status (ADMIN ONLY)
 export async function PATCH(
@@ -12,12 +14,12 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions)
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return errorResponse('Unauthorized', { status: 401 })
     }
 
     // Only ADMIN can change location status
     if (session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
+      return errorResponse('Forbidden - Admin access required', { status: 403 })
     }
 
     const { id } = await context.params
@@ -25,10 +27,7 @@ export async function PATCH(
     const { status } = body
 
     if (!status || !['ACTIVE', 'INACTIVE', 'MAINTENANCE'].includes(status)) {
-      return NextResponse.json(
-        { error: 'Invalid status. Must be ACTIVE, INACTIVE, or MAINTENANCE' }, 
-        { status: 400 }
-      )
+      return errorResponse('Invalid status. Must be ACTIVE, INACTIVE, or MAINTENANCE', { status: 400 })
     }
 
     // Check if location exists
@@ -37,7 +36,7 @@ export async function PATCH(
     })
 
     if (!location) {
-      return NextResponse.json({ error: 'Location not found' }, { status: 404 })
+      return errorResponse('Location not found', { status: 404 })
     }
 
     // Update location status
@@ -46,17 +45,12 @@ export async function PATCH(
       data: { status: status as LocationStatus }
     })
 
-    return NextResponse.json({
-      success: true,
-      data: updatedLocation,
+    return successResponse(updatedLocation, {
       message: `Location status updated to ${status}`
     })
 
   } catch (error) {
     console.error('Error updating location status:', error)
-    return NextResponse.json(
-      { error: 'Internal Server Error' }, 
-      { status: 500 }
-    )
+    return errorResponse('Internal Server Error')
   }
 }
