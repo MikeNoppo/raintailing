@@ -3,6 +3,25 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+function parseDateOnly(value: string | null, options?: { endOfDay?: boolean }) {
+  if (!value) {
+    return undefined
+  }
+
+  const parts = value.split('-').map(Number)
+  const [year, month, day] = parts
+
+  if (!year || !month || !day) {
+    return undefined
+  }
+
+  if (options?.endOfDay) {
+    return new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999))
+  }
+
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
+}
+
 // GET /api/rainfall - Get rainfall data (PUBLIC ACCESS)
 export async function GET(request: NextRequest) {
   try {
@@ -29,15 +48,17 @@ export async function GET(request: NextRequest) {
       where.location = { code: location }
     }
 
-    if (startDate && endDate) {
-      where.date = {
-        gte: new Date(startDate),
-        lte: new Date(endDate)
+    const startBoundary = parseDateOnly(startDate)
+    const endBoundary = parseDateOnly(endDate, { endOfDay: true })
+
+    if (startBoundary || endBoundary) {
+      where.date = {}
+      if (startBoundary) {
+        where.date.gte = startBoundary
       }
-    } else if (startDate) {
-      where.date = { gte: new Date(startDate) }
-    } else if (endDate) {
-      where.date = { lte: new Date(endDate) }
+      if (endBoundary) {
+        where.date.lte = endBoundary
+      }
     }
 
     // Calculate offset for pagination

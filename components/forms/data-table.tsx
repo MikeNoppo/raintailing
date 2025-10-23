@@ -12,7 +12,6 @@ import { FilterControls } from "@/components/forms/filter-controls"
 import { MonthYearSelector } from "@/components/forms/month-year-selector"
 import { formatDateToLocalISO } from "@/lib/utils"
 import { RainfallEditDialog } from '@/components/forms/rainfall-edit-dialog'
-import { format } from "date-fns"
 
 interface DataTableProps {
   filters?: {
@@ -36,15 +35,40 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
   const [showExportDialog, setShowExportDialog] = useState(false)
 
   // API data fetching
-  const apiFilters = useMemo(() => ({
-    location: filters?.location && filters.location !== 'all' ? filters.location : undefined,
-    startDate: filters?.dateRange?.from ? format(filters.dateRange.from, 'yyyy-MM-dd') : undefined,
-    endDate: filters?.dateRange?.to ? format(filters.dateRange.to, 'yyyy-MM-dd') : undefined,
-    page: currentPage,
-    limit: pageSize,
-    sortBy,
-    order: sortOrder
-  }), [filters, currentPage, pageSize, sortBy, sortOrder])
+  const apiFilters = useMemo(() => {
+    const startDate = formatDateToLocalISO(filters?.dateRange?.from)
+    const endDate = formatDateToLocalISO(filters?.dateRange?.to)
+
+    type RequestFilters = {
+      location?: string
+      startDate?: string
+      endDate?: string
+      page?: number
+      limit?: number
+      sortBy?: string
+      order?: 'asc' | 'desc'
+    }
+
+    const filters_obj: RequestFilters = {
+      location: filters?.location && filters.location !== 'all' ? filters.location : undefined,
+      startDate,
+      endDate,
+      page: currentPage,
+      limit: pageSize,
+      sortBy,
+      order: sortOrder
+    }
+    
+    // Remove undefined values to keep the query clean
+    const cleanFilters: RequestFilters = { ...filters_obj }
+    for (const key of Object.keys(cleanFilters) as (keyof RequestFilters)[]) {
+      if (cleanFilters[key] === undefined) {
+        delete cleanFilters[key]
+      }
+    }
+
+    return cleanFilters
+  }, [filters, currentPage, pageSize, sortBy, sortOrder])
 
   // Reset page when external filters change
   useEffect(() => {
@@ -295,8 +319,8 @@ export function DataTable({ filters, onFilterChange }: DataTableProps) {
         {/* Loading skeleton */}
         {apiLoading && (
           <div className="space-y-3">
-            {Array.from({ length: 5 }, (_, index) => index).map((index) => (
-              <div key={index} className="flex items-center space-x-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center space-x-4">
                 <div className="h-4 bg-muted animate-pulse rounded w-1/4"></div>
                 <div className="h-4 bg-muted animate-pulse rounded w-1/6"></div>
                 <div className="h-4 bg-muted animate-pulse rounded w-1/4"></div>
