@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { LocationStatus } from '@prisma/client'
+
+import { successResponse, errorResponse } from '@/lib/api/responses'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { LocationStatus } from '@prisma/client'
 
 // GET /api/locations/[id] - Get specific location (PUBLIC ACCESS)
 export async function GET(
@@ -33,19 +35,13 @@ export async function GET(
     })
 
     if (!location) {
-      return NextResponse.json({ error: 'Location not found' }, { status: 404 })
+      return errorResponse('Location not found', { status: 404 })
     }
 
-    return NextResponse.json({
-      success: true,
-      data: location
-    })
+    return successResponse(location)
   } catch (error) {
     console.error('Error fetching location:', error)
-    return NextResponse.json(
-      { error: 'Internal Server Error' }, 
-      { status: 500 }
-    )
+    return errorResponse('Internal Server Error')
   }
 }
 
@@ -57,12 +53,12 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions)
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return errorResponse('Unauthorized', { status: 401 })
     }
 
     // Only ADMIN can update locations
     if (session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
+      return errorResponse('Forbidden - Admin access required', { status: 403 })
     }
 
     const { id } = await context.params
@@ -75,7 +71,7 @@ export async function PATCH(
     })
 
     if (!existingLocation) {
-      return NextResponse.json({ error: 'Location not found' }, { status: 404 })
+      return errorResponse('Location not found', { status: 404 })
     }
 
     // If code is being updated, check for duplicates
@@ -85,10 +81,7 @@ export async function PATCH(
       })
 
       if (duplicateCode) {
-        return NextResponse.json(
-          { error: 'Location code already exists' }, 
-          { status: 409 }
-        )
+        return errorResponse('Location code already exists', { status: 409 })
       }
     }
 
@@ -103,18 +96,13 @@ export async function PATCH(
       }
     })
 
-    return NextResponse.json({
-      success: true,
-      data: updatedLocation,
+    return successResponse(updatedLocation, {
       message: 'Location updated successfully'
     })
 
   } catch (error) {
     console.error('Error updating location:', error)
-    return NextResponse.json(
-      { error: 'Internal Server Error' }, 
-      { status: 500 }
-    )
+    return errorResponse('Internal Server Error')
   }
 }
 
@@ -126,12 +114,12 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions)
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return errorResponse('Unauthorized', { status: 401 })
     }
 
     // Only ADMIN can delete locations
     if (session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return errorResponse('Forbidden', { status: 403 })
     }
 
     const { id } = await context.params
@@ -149,15 +137,15 @@ export async function DELETE(
     })
 
     if (!location) {
-      return NextResponse.json({ error: 'Location not found' }, { status: 404 })
+      return errorResponse('Location not found', { status: 404 })
     }
 
     // Check if location has related data
     if (location._count.rainfallData > 0) {
-      return NextResponse.json({
-        error: 'Cannot delete location with existing rainfall data. Set status to INACTIVE instead.',
+      return errorResponse('Cannot delete location with existing rainfall data. Set status to INACTIVE instead.', {
+        status: 409,
         details: { rainfallRecords: location._count.rainfallData }
-      }, { status: 409 })
+      })
     }
 
     // Delete location (this will cascade to related thresholds)
@@ -165,16 +153,12 @@ export async function DELETE(
       where: { id }
     })
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({ id }, {
       message: 'Location deleted successfully'
     })
 
   } catch (error) {
     console.error('Error deleting location:', error)
-    return NextResponse.json(
-      { error: 'Internal Server Error' }, 
-      { status: 500 }
-    )
+    return errorResponse('Internal Server Error')
   }
 }
