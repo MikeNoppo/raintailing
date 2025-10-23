@@ -3,8 +3,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 // Types
-interface RainfallDataResponse {
-  data: Array<{
+interface RainfallRecord {
     id: string
     date: string
     rainfall: number
@@ -22,8 +21,9 @@ interface RainfallDataResponse {
     }
     createdAt: string
     updatedAt: string
-  }>
-  pagination: {
+  }
+
+interface RainfallPagination {
     page: number
     limit: number
     total: number
@@ -31,7 +31,16 @@ interface RainfallDataResponse {
     hasNext: boolean
     hasPrev: boolean
   }
+interface RainfallDataResponse {
+  success: boolean
+  data: {
+    records: RainfallRecord[]
+    pagination: RainfallPagination
+  }
+  message?: string
+  meta?: Record<string, unknown>
 }
+
 
 interface RainfallFilters {
   location?: string
@@ -108,7 +117,7 @@ export function useRainfallData(filters: RainfallFilters = {}) {
   )
 
   return {
-    data,
+  data,
     error,
     isLoading,
     mutate
