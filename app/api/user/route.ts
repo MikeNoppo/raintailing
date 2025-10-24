@@ -1,59 +1,32 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextRequest } from 'next/server'
+
+import { requireAuth } from '@/lib/api/auth'
+import { successResponse, errorResponse } from '@/lib/api/responses'
 import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    const authResult = await requireAuth()
+    if (!authResult.success) {
+      return authResult.error
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        name: true,
-        username: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true
-      }
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json({ user })
+    return successResponse(authResult.user)
 
   } catch (error) {
     console.error('Get user error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return errorResponse('Internal server error')
   }
 }
 
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    const authResult = await requireAuth()
+    if (!authResult.success) {
+      return authResult.error
     }
+
+    const { user } = authResult
 
     const { name, username } = await request.json()
 
@@ -62,22 +35,19 @@ export async function PATCH(request: NextRequest) {
       const existingUser = await prisma.user.findFirst({
         where: {
           AND: [
-            { id: { not: session.user.id } },
+            { id: { not: user.id } },
             { username }
           ]
         }
       })
 
       if (existingUser) {
-        return NextResponse.json(
-          { error: 'Username already taken' },
-          { status: 400 }
-        )
+        return errorResponse('Username already taken', { status: 400 })
       }
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: user.id },
       data: {
         ...(name !== undefined && { name }),
         ...(username !== undefined && { username }),
@@ -85,23 +55,19 @@ export async function PATCH(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        username: true,
+        email: true,
         role: true,
         createdAt: true,
         updatedAt: true
       }
     })
 
-    return NextResponse.json({
-      message: 'Profile updated successfully',
-      user: updatedUser
+    return successResponse(updatedUser, {
+      message: 'Profile updated successfully'
     })
 
   } catch (error) {
     console.error('Update user error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return errorResponse('Internal server error')
   }
 }

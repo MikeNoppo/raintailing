@@ -1,26 +1,17 @@
 import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth'
 
+import { requireAuth } from '@/lib/api/auth'
 import { createdResponse, errorResponse } from '@/lib/api/responses'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session || !session.user || !session.user.id) {
-      return errorResponse('Unauthorized - User session not found', { status: 401 })
+    const authResult = await requireAuth()
+    if (!authResult.success) {
+      return authResult.error
     }
 
-    // Validasi apakah user ada di database
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id }
-    })
-    
-    if (!user) {
-      return errorResponse('User tidak ditemukan di database', { status: 400 })
-    }
+    const { user } = authResult
 
     const contentType = request.headers.get('content-type') || ''
 
@@ -86,7 +77,7 @@ export async function POST(request: NextRequest) {
           date: parsedDate,
           rainfall: numericRainfall,
           locationId,
-          userId: session.user.id
+          userId: user.id
         })
       })
 
@@ -281,7 +272,7 @@ export async function POST(request: NextRequest) {
                 date,
                 rainfall,
                 locationId,
-                userId: session.user.id,
+                userId: user.id,
               })
             }
           }
