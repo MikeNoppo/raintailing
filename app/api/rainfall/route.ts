@@ -1,8 +1,7 @@
 import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth'
 
+import { requireAuth } from '@/lib/api/auth'
 import { createdResponse, errorResponse, successResponse } from '@/lib/api/responses'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 function parseDateOnly(value: string | null, options?: { endOfDay?: boolean }) {
@@ -110,18 +109,15 @@ export async function GET(request: NextRequest) {
 // POST /api/rainfall - Create rainfall data (ADMIN ONLY)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return errorResponse('Unauthorized', { status: 401 })
+    const authResult = await requireAuth()
+    if (!authResult.success) {
+      return authResult.error
     }
 
-    // Only ADMIN can create rainfall data
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true }
-    })
+    const { user } = authResult
 
-    if (!user || user.role !== 'ADMIN') {
+    // Only ADMIN can create rainfall data
+    if (user.role !== 'ADMIN') {
       return errorResponse('Forbidden - Admin access required', { status: 403 })
     }
 
@@ -168,7 +164,7 @@ export async function POST(request: NextRequest) {
         date: new Date(date),
         rainfall: parseFloat(rainfall),
         locationId,
-        userId: session.user.id,
+        userId: user.id,
         notes: notes || null
       },
       include: {

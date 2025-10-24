@@ -1,8 +1,7 @@
 import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth'
 
+import { requireAuth } from '@/lib/api/auth'
 import { errorResponse, successResponse } from '@/lib/api/responses'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 interface RouteParams {
@@ -59,18 +58,15 @@ export async function PUT(
   { params }: RouteParams
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return errorResponse('Unauthorized', { status: 401 })
+    const authResult = await requireAuth()
+    if (!authResult.success) {
+      return authResult.error
     }
 
-    // Only ADMIN can update rainfall data
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true }
-    })
+    const { user } = authResult
 
-    if (!user || user.role !== 'ADMIN') {
+    // Only ADMIN can update rainfall data
+    if (user.role !== 'ADMIN') {
       return errorResponse('Forbidden - Admin access required', { status: 403 })
     }
 
@@ -171,18 +167,15 @@ export async function DELETE(
   { params }: RouteParams
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return errorResponse('Unauthorized', { status: 401 })
+    const authResult = await requireAuth()
+    if (!authResult.success) {
+      return authResult.error
     }
 
-    // Only ADMIN can delete rainfall data
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true }
-    })
+    const { user } = authResult
 
-    if (!user || user.role !== 'ADMIN') {
+    // Only ADMIN can delete rainfall data
+    if (user.role !== 'ADMIN') {
       return errorResponse('Forbidden - Admin access required', { status: 403 })
     }
 
