@@ -1,9 +1,8 @@
 import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { LocationStatus } from '@prisma/client'
 
+import { requireAdmin } from '@/lib/api/auth'
 import { successResponse, createdResponse, errorResponse } from '@/lib/api/responses'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/locations - Get all locations (PUBLIC ACCESS)
@@ -46,14 +45,9 @@ export async function GET(request: NextRequest) {
 // POST /api/locations - Create new location (ADMIN ONLY)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return errorResponse('Unauthorized', { status: 401 })
-    }
-
-    // Only ADMIN can create locations
-    if (session.user.role !== 'ADMIN') {
-      return errorResponse('Forbidden - Admin access required', { status: 403 })
+    const authResult = await requireAdmin()
+    if (!authResult.success) {
+      return authResult.error
     }
 
     const body = await request.json()
