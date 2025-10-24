@@ -1,9 +1,8 @@
 import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { LocationStatus } from '@prisma/client'
 
+import { requireAdmin } from '@/lib/api/auth'
 import { successResponse, errorResponse } from '@/lib/api/responses'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/locations/[id] - Get specific location (PUBLIC ACCESS)
@@ -51,14 +50,9 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return errorResponse('Unauthorized', { status: 401 })
-    }
-
-    // Only ADMIN can update locations
-    if (session.user.role !== 'ADMIN') {
-      return errorResponse('Forbidden - Admin access required', { status: 403 })
+    const authResult = await requireAdmin()
+    if (!authResult.success) {
+      return authResult.error
     }
 
     const { id } = await context.params
@@ -112,14 +106,9 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return errorResponse('Unauthorized', { status: 401 })
-    }
-
-    // Only ADMIN can delete locations
-    if (session.user.role !== 'ADMIN') {
-      return errorResponse('Forbidden', { status: 403 })
+    const authResult = await requireAdmin()
+    if (!authResult.success) {
+      return authResult.error
     }
 
     const { id } = await context.params

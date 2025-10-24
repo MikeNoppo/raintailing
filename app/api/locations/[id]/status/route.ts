@@ -1,9 +1,8 @@
 import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { LocationStatus } from '@prisma/client'
 
+import { requireAdminOrOperator } from '@/lib/api/auth'
 import { successResponse, errorResponse } from '@/lib/api/responses'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 // PATCH /api/locations/[id]/status - Toggle location status (ADMIN ONLY)
@@ -12,14 +11,9 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return errorResponse('Unauthorized', { status: 401 })
-    }
-
-    // Only ADMIN can change location status
-    if (session.user.role !== 'ADMIN') {
-      return errorResponse('Forbidden - Admin access required', { status: 403 })
+    const authResult = await requireAdminOrOperator()
+    if (!authResult.success) {
+      return authResult.error
     }
 
     const { id } = await context.params
