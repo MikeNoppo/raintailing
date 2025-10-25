@@ -32,7 +32,7 @@ async function main() {
   console.log('✅ Created admin user:', adminUser.username)
 
   // Create default locations
-  const defaultLocations = [
+const defaultLocations = [
     {
       name: 'Gosowong Pit',
       code: 'GSW-PIT',
@@ -46,19 +46,19 @@ async function main() {
       status: 'ACTIVE' as const,
     },
     {
-      name: 'Tailing Storage Facility',
+      name: 'Tailing dam (TSF)',
       code: 'TSF',
       description: 'Stasiun monitoring di tailing storage facility',
       status: 'ACTIVE' as const,
     },
     {
-      name: 'Kencana Portal',
+      name: 'Kencana (Portal)',
       code: 'KNC-PRT',
       description: 'Stasiun monitoring di portal Kencana',
       status: 'ACTIVE' as const,
     },
     {
-      name: 'Toguraci Portal',
+      name: 'Toguraci (Portal)',
       code: 'TGR-PRT',
       description: 'Stasiun monitoring di portal Toguraci',
       status: 'ACTIVE' as const,
