@@ -115,57 +115,60 @@ export async function POST(request: NextRequest) {
       return errorResponse('Rainfall value must be >= 0', { status: 400 })
     }
 
-    // Validate location exists and is active
-    const location = await prisma.location.findUnique({
-      where: { id: locationId }
-    })
+    // Use transaction to ensure data consistency
+    const rainfallData = await prisma.$transaction(async (tx) => {
+      // Validate location exists and is active
+      const location = await tx.location.findUnique({
+        where: { id: locationId }
+      })
 
-    if (!location) {
-      return errorResponse('Location not found', { status: 404 })
-    }
-
-    if (location.status !== 'ACTIVE') {
-      return errorResponse('Location is not active', { status: 400 })
-    }
-
-    // Check for duplicate entry (same date and location)
-    const existingEntry = await prisma.rainfallData.findFirst({
-      where: {
-        date: new Date(date),
-        locationId
+      if (!location) {
+        throw new Error('Location not found')
       }
-    })
 
-    if (existingEntry) {
-      return errorResponse('Rainfall data for this date and location already exists', { status: 409 })
-    }
+      if (location.status !== 'ACTIVE') {
+        throw new Error('Location is not active')
+      }
 
-    // Create rainfall data
-    const rainfallData = await prisma.rainfallData.create({
-      data: {
-        date: new Date(date),
-        rainfall: parseFloat(rainfall),
-        locationId,
-        userId: user.id,
-        notes: notes || null
-      },
-      include: {
-        location: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            status: true
-          }
+      // Check for duplicate entry (same date and location)
+      const existingEntry = await tx.rainfallData.findFirst({
+        where: {
+          date: new Date(date),
+          locationId
+        }
+      })
+
+      if (existingEntry) {
+        throw new Error('Rainfall data for this date and location already exists')
+      }
+
+      // Create rainfall data
+      return await tx.rainfallData.create({
+        data: {
+          date: new Date(date),
+          rainfall: parseFloat(rainfall),
+          locationId,
+          userId: user.id,
+          notes: notes || null
         },
-        user: {
-          select: {
-            id: true,
-            username: true,
-            name: true
+        include: {
+          location: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              status: true
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              username: true,
+              name: true
+            }
           }
         }
-      }
+      })
     })
 
     return createdResponse(rainfallData, {
@@ -174,6 +177,20 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Create rainfall data error:', error)
+    
+    // Handle custom error messages from transaction
+    if (error instanceof Error) {
+      if (error.message.includes('not found')) {
+        return errorResponse(error.message, { status: 404 })
+      }
+      if (error.message.includes('not active')) {
+        return errorResponse(error.message, { status: 400 })
+      }
+      if (error.message.includes('already exists')) {
+        return errorResponse(error.message, { status: 409 })
+      }
+    }
+    
     return errorResponse('Internal server error')
   }
 }

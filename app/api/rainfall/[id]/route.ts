@@ -69,91 +69,112 @@ export async function PUT(
     const { id } = await context.params
     const { date, rainfall, locationId, notes } = await request.json()
 
-    // Check if rainfall data exists
-    const existingData = await prisma.rainfallData.findUnique({
-      where: { id }
-    })
-
-    if (!existingData) {
-      return errorResponse('Rainfall data not found', { status: 404 })
-    }
-
     // Validate rainfall value if provided
     if (rainfall !== undefined && rainfall < 0) {
       return errorResponse('Rainfall value must be >= 0', { status: 400 })
     }
 
-    // Validate location exists and is active if location is being changed
-    if (locationId && locationId !== existingData.locationId) {
-      const location = await prisma.location.findUnique({
-        where: { id: locationId }
-      })
-
-      if (!location) {
-        return errorResponse('Location not found', { status: 404 })
-      }
-
-      if (location.status !== 'ACTIVE') {
-        return errorResponse('Location is not active', { status: 400 })
-      }
-
-      // Check for duplicate entry if date or location is changing
-      if (date || locationId) {
-        const checkDate = date ? parseISODate(date) : existingData.date
-        const checkLocationId = locationId || existingData.locationId
-
-        const duplicateEntry = await prisma.rainfallData.findFirst({
-          where: {
-            AND: [
-              { id: { not: id } },
-              { date: checkDate },
-              { locationId: checkLocationId }
-            ]
-          }
+    // Use transaction to ensure data consistency during update
+    try {
+      const updatedData = await prisma.$transaction(async (tx) => {
+        // Check if rainfall data exists
+        const existingData = await tx.rainfallData.findUnique({
+          where: { id }
         })
 
-        if (duplicateEntry) {
-          return errorResponse('Rainfall data for this date and location already exists', { status: 409 })
+        if (!existingData) {
+          throw new Error('Rainfall data not found')
+        }
+
+        // Validate location exists and is active if location is being changed
+        if (locationId && locationId !== existingData.locationId) {
+          const location = await tx.location.findUnique({
+            where: { id: locationId }
+          })
+
+          if (!location) {
+            throw new Error('Location not found')
+          }
+
+          if (location.status !== 'ACTIVE') {
+            throw new Error('Location is not active')
+          }
+        }
+
+        // Check for duplicate entry if date or location is changing
+        if (date || locationId) {
+          const checkDate = date ? parseISODate(date) : existingData.date
+          const checkLocationId = locationId || existingData.locationId
+
+          const duplicateEntry = await tx.rainfallData.findFirst({
+            where: {
+              AND: [
+                { id: { not: id } },
+                { date: checkDate },
+                { locationId: checkLocationId }
+              ]
+            }
+          })
+
+          if (duplicateEntry) {
+            throw new Error('Rainfall data for this date and location already exists')
+          }
+        }
+
+        // Update rainfall data
+        return await tx.rainfallData.update({
+          where: { id },
+          data: {
+            ...(date && { date: parseISODate(date) }),
+            ...(rainfall !== undefined && { rainfall: parseFloat(rainfall) }),
+            ...(locationId && { locationId }),
+            ...(notes !== undefined && { notes: notes || null }),
+            updatedAt: new Date()
+          },
+          include: {
+            location: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                status: true
+              }
+            },
+            user: {
+              select: {
+                id: true,
+                username: true,
+                name: true
+              }
+            }
+          }
+        })
+      })
+
+      return successResponse(updatedData, {
+        message: 'Rainfall data updated successfully'
+      })
+    } catch (error) {
+      console.error('Update rainfall data error:', error)
+      
+      // Handle transaction-specific errors
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) {
+          return errorResponse(error.message, { status: 404 })
+        }
+        if (error.message.includes('not active')) {
+          return errorResponse(error.message, { status: 400 })
+        }
+        if (error.message.includes('already exists')) {
+          return errorResponse(error.message, { status: 409 })
         }
       }
+      
+      return errorResponse('Internal server error')
     }
-
-    // Update rainfall data
-    const updatedData = await prisma.rainfallData.update({
-      where: { id },
-      data: {
-        ...(date && { date: parseISODate(date) }),
-        ...(rainfall !== undefined && { rainfall: parseFloat(rainfall) }),
-        ...(locationId && { locationId }),
-        ...(notes !== undefined && { notes: notes || null }),
-        updatedAt: new Date()
-      },
-      include: {
-        location: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            status: true
-          }
-        },
-        user: {
-          select: {
-            id: true,
-            username: true,
-            name: true
-          }
-        }
-      }
-    })
-
-    return successResponse(updatedData, {
-      message: 'Rainfall data updated successfully'
-    })
-
   } catch (error) {
-    console.error('Update rainfall data error:', error)
-    return errorResponse('Internal server error')
+    console.error('Update rainfall data request error:', error)
+    return errorResponse('Failed to process request')
   }
 }
 

@@ -291,16 +291,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const result = await prisma.rainfallData.createMany({
-      data: rainfallDataToCreate,
-      skipDuplicates: true,
+    // Use transaction for atomic bulk import with proper error handling
+    const result = await prisma.$transaction(async (tx) => {
+      // Validate all locationIds exist and are active
+      const uniqueLocationIds = [...new Set(rainfallDataToCreate.map(item => item.locationId))]
+      const validLocations = await tx.location.findMany({
+        where: {
+          id: { in: uniqueLocationIds },
+          status: 'ACTIVE'
+        },
+        select: { id: true }
+      })
+
+      const validLocationIdSet = new Set(validLocations.map(loc => loc.id))
+      
+      // Filter out records with invalid locations
+      const validData = rainfallDataToCreate.filter(item => 
+        validLocationIdSet.has(item.locationId)
+      )
+
+      if (validData.length === 0) {
+        throw new Error('Tidak ada data dengan lokasi yang valid dan aktif')
+      }
+
+      // Create records atomically
+      const createResult = await tx.rainfallData.createMany({
+        data: validData,
+        skipDuplicates: true,
+      })
+
+      return {
+        count: createResult.count,
+        totalRows: rainfallDataToCreate.length,
+        validRows: validData.length,
+        invalidLocationRows: rainfallDataToCreate.length - validData.length
+      }
     })
 
     const summary = {
       imported: result.count,
-      totalRows: rainfallDataToCreate.length,
-      skipped: rainfallDataToCreate.length - result.count,
-      failed: rainfallDataToCreate.length - result.count
+      totalRows: result.totalRows,
+      skipped: result.validRows - result.count,
+      failed: result.invalidLocationRows
     }
 
     return createdResponse(summary, {
@@ -310,11 +342,18 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Bulk CSV import error:', error)
     
+    // Handle Prisma-specific errors
     if (error && typeof error === 'object' && 'code' in error) {
       if (error.code === 'P2003') {
         return errorResponse('Foreign key constraint error - User atau Location tidak valid', {
           status: 400,
           details: error instanceof Error ? error.message : 'Database constraint error'
+        })
+      }
+      if (error.code === 'P2002') {
+        return errorResponse('Duplicate entry found in import data', {
+          status: 400,
+          details: error instanceof Error ? error.message : 'Unique constraint violation'
         })
       }
     }
