@@ -1,4 +1,8 @@
 // Centralized type definitions
+
+// Export API route types
+export * from './api'
+
 export interface RainfallData {
   date: string
   rainfall: number
@@ -83,3 +87,35 @@ export type RainfallCategory = 'tidakHujan' | 'ringan' | 'sedang' | 'lebat'
 
 export type ChartType = 'daily' | 'monthly' | 'location-total' | 'monthly-location-total'
 export type ChartOrientation = 'vertical' | 'horizontal'
+
+export type ExportMode = 'monthly' | 'yearly'
+
+export interface MonthlyStats {
+  month: number
+  monthName: string
+  total: number
+  average: number
+  peak: number
+  rainDays: number
+  wetDays: number
+  dataCount: number
+}
+
+export interface YearlyExportData {
+  year: number
+  locations: string[]
+  monthlyStats: MonthlyStats[]
+  locationStats: {
+    [locationCode: string]: {
+      monthlyData: {
+        month: number
+        total: number
+        average: number
+        peak: number
+      }[]
+      yearlyTotal: number
+      yearlyAverage: number
+      yearlyPeak: number
+    }
+  }
+}
