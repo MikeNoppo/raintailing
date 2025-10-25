@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Download, Calendar, MapPin, FileSpreadsheet, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { useAvailableDates, getAvailableYears, getAvailableMonthsForYear, getIndonesianMonthName } from "@/lib/hooks/useAvailableDates"
+import { ExportMode } from "@/lib/types"
 
 interface MonthYearSelectorProps {
   open: boolean
@@ -16,39 +17,36 @@ interface MonthYearSelectorProps {
 }
 
 export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearSelectorProps) {
+  const [exportMode, setExportMode] = useState<ExportMode>('monthly')
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
 
-  // Fetch available dates based on current location filter
   const { data: availableMonths, isLoading, error, refetch } = useAvailableDates({
     location: currentLocation
   })
 
-  // Get available years and months
   const availableYears = getAvailableYears(availableMonths)
   const availableMonthsForYear = selectedYear ? getAvailableMonthsForYear(availableMonths, selectedYear) : []
 
-  // Reset selections when dialog opens or location changes
   useEffect(() => {
     if (open) {
+      setExportMode('monthly')
       setSelectedYear(null)
       setSelectedMonth(null)
       setIsDownloading(false)
     }
   }, [open, currentLocation])
 
-  // Auto-select first available year when data loads
   useEffect(() => {
     if (availableYears.length > 0 && !selectedYear) {
       setSelectedYear(availableYears[0])
     }
   }, [availableYears, selectedYear])
 
-  // Reset month selection when year changes
   useEffect(() => {
     setSelectedMonth(null)
-  }, [selectedYear])
+  }, [selectedYear, exportMode])
 
   const handleYearChange = (value: string) => {
     const year = parseInt(value)
@@ -62,8 +60,13 @@ export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearS
   }
 
   const handleDownload = async () => {
-    if (!selectedYear || !selectedMonth) {
-      toast.error("Silakan pilih tahun dan bulan terlebih dahulu")
+    if (!selectedYear) {
+      toast.error("Silakan pilih tahun terlebih dahulu")
+      return
+    }
+
+    if (exportMode === 'monthly' && !selectedMonth) {
+      toast.error("Silakan pilih bulan terlebih dahulu")
       return
     }
 
@@ -72,24 +75,28 @@ export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearS
     try {
       const queryParams = new URLSearchParams({
         year: selectedYear.toString(),
-        month: selectedMonth.toString(),
+        ...(exportMode === 'monthly' && selectedMonth && { month: selectedMonth.toString() }),
         ...(currentLocation && currentLocation !== 'all' && { location: currentLocation })
       })
 
-      const response = await fetch(`/api/rainfall/export?${queryParams}`)
+      const endpoint = exportMode === 'yearly' 
+        ? `/api/rainfall/export/yearly?${queryParams}`
+        : `/api/rainfall/export?${queryParams}`
+
+      const response = await fetch(endpoint)
       
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.error || 'Failed to export data')
       }
 
-      // Get filename from response headers
       const contentDisposition = response.headers.get('content-disposition')
       const filename = contentDisposition
         ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
-        : `Data_Curah_Hujan_${getIndonesianMonthName(selectedMonth)}_${selectedYear}.xlsx`
+        : exportMode === 'yearly'
+          ? `Laporan_Tahunan_${selectedYear}.xlsx`
+          : `Data_Curah_Hujan_${getIndonesianMonthName(selectedMonth!)}_${selectedYear}.xlsx`
 
-      // Download file
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -100,7 +107,10 @@ export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearS
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
 
-      toast.success(`Data ${getIndonesianMonthName(selectedMonth)} ${selectedYear} berhasil diekspor`)
+      const periodText = exportMode === 'yearly' 
+        ? `Tahun ${selectedYear}` 
+        : `${getIndonesianMonthName(selectedMonth!)} ${selectedYear}`
+      toast.success(`Data ${periodText} berhasil diekspor`)
       onClose()
       
     } catch (error) {
@@ -111,9 +121,9 @@ export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearS
     }
   }
 
-  // Get selected period info
   const selectedPeriodData = availableMonthsForYear.find(m => m.month === selectedMonth)
   const dataCount = selectedPeriodData?.count || 0
+  const yearlyDataCount = availableMonthsForYear.reduce((sum, m) => sum + m.count, 0)
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -126,7 +136,6 @@ export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearS
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Current Filter Info */}
           {currentLocation && currentLocation !== 'all' && (
             <Card className="bg-blue-50 border-blue-200">
               <CardContent className="pt-4">
@@ -138,7 +147,6 @@ export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearS
             </Card>
           )}
 
-          {/* Loading State */}
           {isLoading && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -146,7 +154,6 @@ export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearS
             </div>
           )}
 
-          {/* Error State */}
           {error && (
             <Card className="bg-red-50 border-red-200">
               <CardContent className="pt-4">
@@ -165,7 +172,6 @@ export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearS
             </Card>
           )}
 
-          {/* No Data State */}
           {!isLoading && !error && availableMonths.length === 0 && (
             <Card className="bg-yellow-50 border-yellow-200">
               <CardContent className="pt-4">
@@ -179,10 +185,30 @@ export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearS
             </Card>
           )}
 
-          {/* Selection Controls */}
           {!isLoading && !error && availableMonths.length > 0 && (
             <div className="space-y-4">
-              {/* Year Selection */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Mode Export</label>
+                <div className="flex gap-2 p-1 bg-muted rounded-lg">
+                  <Button
+                    type="button"
+                    variant={exportMode === 'monthly' ? 'default' : 'ghost'}
+                    className="flex-1"
+                    onClick={() => setExportMode('monthly')}
+                  >
+                    Bulanan
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={exportMode === 'yearly' ? 'default' : 'ghost'}
+                    className="flex-1"
+                    onClick={() => setExportMode('yearly')}
+                  >
+                    Tahunan
+                  </Button>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">Pilih Tahun</label>
                 <Select value={selectedYear?.toString() || ""} onValueChange={handleYearChange}>
@@ -199,44 +225,50 @@ export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearS
                 </Select>
               </div>
 
-              {/* Month Selection */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Pilih Bulan</label>
-                <Select 
-                  value={selectedMonth?.toString() || ""} 
-                  onValueChange={handleMonthChange}
-                  disabled={!selectedYear}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={selectedYear ? "Pilih bulan" : "Pilih tahun terlebih dahulu"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableMonthsForYear.map(monthData => (
-                      <SelectItem key={monthData.month} value={monthData.month.toString()}>
-                        <div className="flex items-center justify-between w-full">
-                          <span>{getIndonesianMonthName(monthData.month)}</span>
-                          <span className="text-xs text-muted-foreground ml-2">
-                            ({monthData.count} data)
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {exportMode === 'monthly' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Pilih Bulan</label>
+                  <Select 
+                    value={selectedMonth?.toString() || ""} 
+                    onValueChange={handleMonthChange}
+                    disabled={!selectedYear}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={selectedYear ? "Pilih bulan" : "Pilih tahun terlebih dahulu"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableMonthsForYear.map(monthData => (
+                        <SelectItem key={monthData.month} value={monthData.month.toString()}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>{getIndonesianMonthName(monthData.month)}</span>
+                            <span className="text-xs text-muted-foreground ml-2">
+                              ({monthData.count} data)
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
-              {/* Selected Period Info */}
-              {selectedYear && selectedMonth && (
+              {selectedYear && (exportMode === 'yearly' || selectedMonth) && (
                 <Card className="bg-green-50 border-green-200">
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="h-4 w-4 text-green-600" />
                       <div className="text-green-700">
                         <p className="font-medium">
-                          {getIndonesianMonthName(selectedMonth)} {selectedYear}
+                          {exportMode === 'yearly' 
+                            ? `Tahun ${selectedYear}` 
+                            : `${getIndonesianMonthName(selectedMonth!)} ${selectedYear}`
+                          }
                         </p>
                         <p className="text-xs">
-                          {dataCount} data tersedia untuk periode ini
+                          {exportMode === 'yearly'
+                            ? `${yearlyDataCount} data tersedia untuk tahun ini`
+                            : `${dataCount} data tersedia untuk periode ini`
+                          }
                         </p>
                       </div>
                     </div>
@@ -246,14 +278,18 @@ export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearS
             </div>
           )}
 
-          {/* Action Buttons */}
           <div className="flex justify-between pt-4">
             <Button variant="outline" onClick={onClose} disabled={isDownloading}>
               Batal
             </Button>
             <Button 
               onClick={handleDownload}
-              disabled={!selectedYear || !selectedMonth || dataCount === 0 || isDownloading}
+              disabled={
+                !selectedYear || 
+                (exportMode === 'monthly' && (!selectedMonth || dataCount === 0)) ||
+                (exportMode === 'yearly' && yearlyDataCount === 0) ||
+                isDownloading
+              }
               className="flex items-center gap-2"
             >
               {isDownloading ? (
