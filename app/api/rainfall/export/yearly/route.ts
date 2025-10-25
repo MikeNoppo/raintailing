@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import * as ExcelJS from 'exceljs'
+
+import { prisma } from '@/lib/prisma'
+import { startOfYear, endOfYear } from '@/lib/utils/date-helpers'
 
 const MONTH_NAMES = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -29,8 +31,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const startDate = new Date(yearNum, 0, 1)
-    const endDate = new Date(yearNum, 11, 31, 23, 59, 59)
+    const startDate = startOfYear(yearNum)
+    const endDate = endOfYear(yearNum)
 
     const where: {
       location?: { code: string }

@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/api/auth'
 import { errorResponse, successResponse } from '@/lib/api/responses'
 import { prisma } from '@/lib/prisma'
+import { parseISODate } from '@/lib/utils/date-helpers'
 import type { RouteContext } from '@/lib/types'
 
 // GET /api/rainfall/[id] - Get specific rainfall data (PUBLIC ACCESS)
@@ -98,7 +99,7 @@ export async function PUT(
 
       // Check for duplicate entry if date or location is changing
       if (date || locationId) {
-        const checkDate = date ? new Date(date) : existingData.date
+        const checkDate = date ? parseISODate(date) : existingData.date
         const checkLocationId = locationId || existingData.locationId
 
         const duplicateEntry = await prisma.rainfallData.findFirst({
@@ -121,7 +122,7 @@ export async function PUT(
     const updatedData = await prisma.rainfallData.update({
       where: { id },
       data: {
-        ...(date && { date: new Date(date) }),
+        ...(date && { date: parseISODate(date) }),
         ...(rainfall !== undefined && { rainfall: parseFloat(rainfall) }),
         ...(locationId && { locationId }),
         ...(notes !== undefined && { notes: notes || null }),

@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/api/auth'
 import { createdResponse, errorResponse } from '@/lib/api/responses'
 import { prisma } from '@/lib/prisma'
+import { parseISODate } from '@/lib/utils/date-helpers'
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,8 +59,8 @@ export async function POST(request: NextRequest) {
           return
         }
 
-        const parsedDate = new Date(date)
-        if (isNaN(parsedDate.getTime())) {
+        const parsedDate = parseISODate(date)
+        if (!parsedDate) {
           return
         }
 

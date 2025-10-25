@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import * as ExcelJS from 'exceljs'
+
+import { prisma } from '@/lib/prisma'
+import { startOfMonth, endOfMonth } from '@/lib/utils/date-helpers'
 
 // GET /api/rainfall/export - Export rainfall data for specific month/year (PUBLIC ACCESS)
 export async function GET(request: NextRequest) {
@@ -29,8 +31,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Build date range for the selected month
-    const startDate = new Date(yearNum, monthNum - 1, 1) // Month is 0-indexed
-    const endDate = new Date(yearNum, monthNum, 0) // Last day of the month
+    const startDate = startOfMonth(yearNum, monthNum)
+    const endDate = endOfMonth(yearNum, monthNum)
 
     // Build where clause
     const where: {

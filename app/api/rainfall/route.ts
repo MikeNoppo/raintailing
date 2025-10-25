@@ -3,25 +3,7 @@ import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/api/auth'
 import { createdResponse, errorResponse, successResponse } from '@/lib/api/responses'
 import { prisma } from '@/lib/prisma'
-
-function parseDateOnly(value: string | null, options?: { endOfDay?: boolean }) {
-  if (!value) {
-    return undefined
-  }
-
-  const parts = value.split('-').map(Number)
-  const [year, month, day] = parts
-
-  if (!year || !month || !day) {
-    return undefined
-  }
-
-  if (options?.endOfDay) {
-    return new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999))
-  }
-
-  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
-}
+import { parseDateOnly } from '@/lib/utils/date-helpers'
 
 // GET /api/rainfall - Get rainfall data (PUBLIC ACCESS)
 export async function GET(request: NextRequest) {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+
 import { prisma } from '@/lib/prisma'
 import { rainfallCategories, classifyRainfall } from '@/lib/utils/rainfall-classification'
+import { parseISODate } from '@/lib/utils/date-helpers'
 
 // GET /api/analytics/classification - Get rainfall classification data (PUBLIC ACCESS)
 export async function GET(request: NextRequest) {
@@ -23,15 +25,18 @@ export async function GET(request: NextRequest) {
       where.location = { code: location }
     }
 
-    if (startDate && endDate) {
+    const parsedStart = parseISODate(startDate)
+    const parsedEnd = parseISODate(endDate)
+
+    if (parsedStart && parsedEnd) {
       where.date = {
-        gte: new Date(startDate),
-        lte: new Date(endDate)
+        gte: parsedStart,
+        lte: parsedEnd
       }
-    } else if (startDate) {
-      where.date = { gte: new Date(startDate) }
-    } else if (endDate) {
-      where.date = { lte: new Date(endDate) }
+    } else if (parsedStart) {
+      where.date = { gte: parsedStart }
+    } else if (parsedEnd) {
+      where.date = { lte: parsedEnd }
     }
 
     // Get all rainfall data for classification
