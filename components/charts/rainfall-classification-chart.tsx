@@ -71,7 +71,6 @@ interface RainfallClassificationChartProps {
   showAsDonut?: boolean
   title?: string
   description?: string
-  useApiData?: boolean // New prop to enable API data
 }
 
 export function RainfallClassificationChart({ 
@@ -79,10 +78,8 @@ export function RainfallClassificationChart({
   dateRange,
   showAsDonut = true,
   title = "Klasifikasi Curah Hujan",
-  description = "Proporsi kategori curah hujan berdasarkan data harian",
-  useApiData = true // Default to true for API integration
+  description = "Proporsi kategori curah hujan berdasarkan data harian"
 }: RainfallClassificationChartProps) {
-  // Use API data when enabled
   const { 
     chartData: apiChartData, 
     summary, 
@@ -95,8 +92,7 @@ export function RainfallClassificationChart({
     endDate: dateRange?.end
   })
 
-  // Loading state
-  if (useApiData && isLoading) {
+  if (isLoading) {
     return (
       <Card className="flex flex-col">
         <CardHeader className="items-center pb-0">
@@ -110,8 +106,7 @@ export function RainfallClassificationChart({
     )
   }
 
-  // Error state
-  if (useApiData && error) {
+  if (error) {
     return (
       <Card className="flex flex-col">
         <CardHeader className="items-center pb-0">
@@ -130,8 +125,7 @@ export function RainfallClassificationChart({
     )
   }
 
-  // Empty state
-  if (useApiData && isEmpty) {
+  if (isEmpty) {
     return (
       <Card className="flex flex-col">
         <CardHeader className="items-center pb-0">
@@ -151,8 +145,8 @@ export function RainfallClassificationChart({
     )
   }
 
-  const chartData = useApiData ? apiChartData : []
-  const totalDays = useApiData ? (summary?.totalDays || 0) : 0
+  const chartData = apiChartData
+  const totalDays = summary?.totalDays || 0
 
   return (
     <Card className="flex flex-col">
@@ -239,14 +233,11 @@ export function RainfallClassificationChart({
 // Helper component for showing classification summary
 export function RainfallClassificationSummary({ 
   location,
-  dateRange,
-  useApiData = true
+  dateRange
 }: { 
   location?: string
   dateRange?: { start: string, end: string }
-  useApiData?: boolean
 }) {
-  // Use API data when enabled
   const { 
     chartData: apiChartData, 
     summary, 
@@ -259,8 +250,7 @@ export function RainfallClassificationSummary({
     endDate: dateRange?.end
   })
 
-  // Loading state
-  if (useApiData && isLoading) {
+  if (isLoading) {
     return (
       <Card>
         <CardHeader>
@@ -278,8 +268,7 @@ export function RainfallClassificationSummary({
     )
   }
 
-  // Error state
-  if (useApiData && error) {
+  if (error) {
     return (
       <Card>
         <CardHeader>
@@ -295,8 +284,7 @@ export function RainfallClassificationSummary({
     )
   }
 
-  // Empty state
-  if (useApiData && isEmpty) {
+  if (isEmpty) {
     return (
       <Card>
         <CardHeader>
@@ -315,8 +303,8 @@ export function RainfallClassificationSummary({
     )
   }
 
-  const chartData = useApiData ? apiChartData : []
-  const totalDays = useApiData ? (summary?.totalDays || 0) : 0
+  const chartData = apiChartData
+  const totalDays = summary?.totalDays || 0
 
   return (
     <Card>

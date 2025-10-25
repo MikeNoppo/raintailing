@@ -15,54 +15,46 @@ import {
 import { Loader2 } from "lucide-react"
 import { useRainfallData } from "@/lib/hooks"
 import { transformRainfallDataForCharts } from "@/lib/utils/data-transformers"
+import { getCurrentMonthRange } from "@/lib/utils/date-helpers"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
 
 interface RainfallChartProps {
-  data?: Array<{
-    date: string
-    rainfall: number
-    location: string
-  }>
   selectedLocation?: string
   dateRange?: {
     start: string
     end: string
   }
-  useApiData?: boolean
   height?: string
 }
 
 export function RainfallChart({ 
-  data = [], 
   selectedLocation,
   dateRange,
-  useApiData = false,
   height = "h-80"
 }: RainfallChartProps) {
-  // Fetch data from API if useApiData is true
+  const defaultDateRange = !dateRange?.start && !dateRange?.end ? getCurrentMonthRange() : null
+  const effectiveStartDate = dateRange?.start || defaultDateRange?.start
+  const effectiveEndDate = dateRange?.end || defaultDateRange?.end
+
   const { 
     data: apiData, 
     error: apiError, 
     isLoading: apiLoading 
-  } = useRainfallData(
-    useApiData ? {
-      location: selectedLocation,
-      startDate: dateRange?.start,
-      endDate: dateRange?.end,
-      sortBy: 'date',
-      order: 'asc',
-      limit: 500
-    } : {}
-  )
+  } = useRainfallData({
+    location: selectedLocation,
+    startDate: effectiveStartDate,
+    endDate: effectiveEndDate,
+    sortBy: 'date',
+    order: 'asc',
+    limit: 500
+  })
 
-  // Determine data source
-  const dataSource = useApiData && apiData?.data?.records 
+  const dataSource = apiData?.data?.records 
     ? transformRainfallDataForCharts(apiData.data.records)
-    : data
+    : []
 
-  // Show loading state
-  if (useApiData && apiLoading) {
+  if (apiLoading) {
     return (
       <div className={`${height} flex items-center justify-center`}>
         <Loader2 className="h-6 w-6 animate-spin" />
@@ -71,8 +63,7 @@ export function RainfallChart({
     )
   }
 
-  // Show error state
-  if (useApiData && apiError) {
+  if (apiError) {
     return (
       <div className={`${height} flex items-center justify-center`}>
         <div className="text-center">

@@ -15,6 +15,7 @@ import { Loader2 } from "lucide-react"
 import { useRainfallData } from "@/lib/hooks"
 import { useLocations } from "@/lib/hooks/useLocations"
 import { formatDateToLocalISO } from "@/lib/utils"
+import { getCurrentMonthRange } from "@/lib/utils/date-helpers"
 
 // Default locations based on location-management.tsx
 const defaultLocations: Location[] = [
@@ -26,12 +27,6 @@ const defaultLocations: Location[] = [
   { id: "6", name: "Gosowong North", code: "GSW-NTH", status: "active" },
 ]
 
-interface DataPoint {
-  date: string;
-  [key: string]: string | number;
-}
-
-// Color configuration for each location with special color for Toguraci
 const chartConfig = {
   "GSW-PIT": {
     label: "Gosowong Pit",
@@ -67,63 +62,51 @@ interface Location {
 }
 
 interface RainfallAreaChartProps {
-  data?: Array<{
-    date: string
-    rainfall: number
-    location: string
-  }>
   filteredLocation?: string
   dateRange?: { from: Date; to: Date }
-  useApiData?: boolean
 }
 
 export function AreaChart({ 
-  data: propData, 
   filteredLocation = "all", 
-  dateRange,
-  useApiData = false 
+  dateRange
 }: RainfallAreaChartProps) {
-  // Fetch locations from API - ALWAYS call this hook
   const { locations: apiLocations, loading: locationsLoading } = useLocations({ 
     status: 'ACTIVE', 
     autoRefresh: true, 
     refreshInterval: 60000 
   })
 
-  // Fetch rainfall data from API if useApiData is true - ALWAYS call this hook
+  const defaultDateRange = !dateRange?.from && !dateRange?.to ? getCurrentMonthRange() : null
+  const effectiveStartDate = dateRange?.from ? formatDateToLocalISO(dateRange.from) : defaultDateRange?.start
+  const effectiveEndDate = dateRange?.to ? formatDateToLocalISO(dateRange.to) : defaultDateRange?.end
+
   const { 
     data: apiData, 
     error: apiError, 
     isLoading: apiLoading 
-  } = useRainfallData(
-    useApiData ? {
-      location: filteredLocation !== "all" ? filteredLocation : undefined,
-      startDate: formatDateToLocalISO(dateRange?.from),
-      endDate: formatDateToLocalISO(dateRange?.to),
-      limit: 500, // Increase limit for chart data
-      sortBy: 'date',
-      order: 'asc'
-    } : undefined
-  )
+  } = useRainfallData({
+    location: filteredLocation !== "all" ? filteredLocation : undefined,
+    startDate: effectiveStartDate,
+    endDate: effectiveEndDate,
+    limit: 500,
+    sortBy: 'date',
+    order: 'asc'
+  })
 
-  // Use API data if available, otherwise fallback to prop data or default locations
-  const dataSource = useApiData && apiData?.data?.records 
-    ? apiData.data.records.map(item => ({
-        date: item.date,
-        rainfall: item.rainfall,
-        location: item.location.code
-      }))
-    : propData
+  const locations = apiLocations || defaultLocations
 
-  const locations = useApiData ? (apiLocations || defaultLocations) : defaultLocations
-
-  // Convert dataSource to chart format or generate data - ALWAYS call this hook
   const chartDataWithLocations = React.useMemo(() => {
+    const dataSource = apiData?.data?.records 
+      ? apiData.data.records.map(item => ({
+          date: item.date,
+          rainfall: item.rainfall,
+          location: item.location.code
+        }))
+      : []
+
     if (dataSource && dataSource.length > 0) {
-      // Convert the API/prop data to chart format
       const dataMap = new Map()
       
-      // Group data by date
       dataSource.forEach(item => {
         if (!dataMap.has(item.date)) {
           dataMap.set(item.date, { date: item.date })
@@ -131,37 +114,13 @@ export function AreaChart({
         dataMap.get(item.date)[item.location] = item.rainfall
       })
       
-      // Convert map to array and sort by date
       return Array.from(dataMap.values()).sort((a, b) => 
         new Date(a.date).getTime() - new Date(b.date).getTime()
       )
-    } else if (!useApiData) {
-      // Fallback to generated data only if not using API data
-      const data = []
-      const startDate = new Date("2024-04-01")
-
-      for (let i = 0; i < 90; i++) {
-        const date = new Date(startDate)
-        date.setDate(date.getDate() + i)
-
-        const dataPoint: DataPoint = {
-          date: date.toISOString().split("T")[0],
-        }
-
-        // Generate data for each active location
-        locations.forEach((location, index) => {
-          const baseRainfall = Math.max(0, Math.random() * 50 + Math.sin(i * (0.1 + index * 0.02)) * 20)
-          dataPoint[location.code] = Math.round(baseRainfall * 10) / 10
-        })
-
-        data.push(dataPoint)
-      }
-
-      return data
     }
     
     return []
-  }, [locations, dataSource, useApiData])
+  }, [apiData])
 
   // Filter locations based on filter controls - ALWAYS call this hook
   const displayedLocations = React.useMemo(() => {
@@ -171,30 +130,8 @@ export function AreaChart({
     return locations.filter(location => location.code === filteredLocation)
   }, [locations, filteredLocation])
 
-  // Filter chart data - ALWAYS call this hook
   const filteredData = React.useMemo(() => {
-    const filtered = chartDataWithLocations.filter((item) => {
-      const date = new Date(item.date)
-      
-      // Apply date range filter from filter controls if provided
-      if (dateRange?.from && dateRange?.to) {
-        return date >= dateRange.from && date <= dateRange.to
-      }
-      
-      // If using API data or prop data, don't apply default date filter
-      if (dataSource && dataSource.length > 0) {
-        return true
-      }
-      
-      // If no date filter and using generated data, show last 90 days by default
-      const referenceDate = new Date("2024-06-30") // Use a fixed reference date
-      const startDate = new Date(referenceDate)
-      startDate.setDate(startDate.getDate() - 90)
-      return date >= startDate
-    })
-
-    // Ensure all displayed locations have data (fill with 0 if missing)
-    return filtered.map(item => {
+    return chartDataWithLocations.map(item => {
       const filledItem = { ...item }
       displayedLocations.forEach(location => {
         if (filledItem[location.code] === undefined) {
@@ -203,9 +140,8 @@ export function AreaChart({
       })
       return filledItem
     })
-  }, [chartDataWithLocations, dateRange, dataSource, displayedLocations])
+  }, [chartDataWithLocations, displayedLocations])
 
-  // Generate dynamic chart config based on displayed locations - ALWAYS call this hook
   const dynamicChartConfig = React.useMemo(() => {
     const config: ChartConfig = {}
     displayedLocations.forEach((location) => {
@@ -217,8 +153,7 @@ export function AreaChart({
     return config
   }, [displayedLocations])
 
-  // Loading state for API data
-  if (useApiData && (apiLoading || locationsLoading)) {
+  if (apiLoading || locationsLoading) {
     return (
       <Card>
         <CardHeader>
@@ -232,8 +167,7 @@ export function AreaChart({
     )
   }
 
-  // Error state for API data
-  if (useApiData && apiError) {
+  if (apiError) {
     return (
       <Card>
         <CardHeader>
@@ -258,7 +192,7 @@ export function AreaChart({
           <CardDescription>
             {filteredLocation !== "all" 
               ? `Data curah hujan untuk ${displayedLocations[0]?.name || filteredLocation}`
-              : `Perbandingan curah hujan antar ${displayedLocations.length} stasiun ${useApiData ? 'dari database real-time' : (dataSource && dataSource.length > 0 ? 'berdasarkan data real' : 'dalam periode waktu')}`
+              : `Perbandingan curah hujan antar ${displayedLocations.length} stasiun`
             }
           </CardDescription>
         </div>

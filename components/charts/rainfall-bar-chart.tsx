@@ -4,9 +4,8 @@ import { Bar } from "react-chartjs-2"
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js"
 import { Loader2 } from "lucide-react"
 import { useRainfallData } from "@/lib/hooks"
-import { 
-  transformRainfallDataForCharts
-} from "@/lib/utils/data-transformers"
+import { transformRainfallDataForCharts } from "@/lib/utils/data-transformers"
+import { getCurrentMonthRange } from "@/lib/utils/date-helpers"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
@@ -18,12 +17,6 @@ interface AggregatedDataItem {
 }
 
 interface RainfallBarChartProps {
-  data?: Array<{
-    date?: string
-    month?: string
-    rainfall: number
-    location?: string
-  }>
   type?: "daily" | "monthly" | "location-total" | "monthly-location-total"
   orientation?: "vertical" | "horizontal"
   showComparison?: boolean
@@ -38,45 +31,40 @@ interface RainfallBarChartProps {
     end?: string
   }
   selectedLocation?: string
-  useApiData?: boolean
   height?: string
 }
 
 export function RainfallBarChart({ 
-  data = [], 
   type = "daily",
   orientation = "vertical",
   showComparison = false,
   comparisonData,
   dateRange,
   selectedLocation,
-  useApiData = false,
   height = "h-80"
 }: RainfallBarChartProps) {
+  const defaultDateRange = !dateRange?.start && !dateRange?.end ? getCurrentMonthRange() : null
+  const effectiveStartDate = dateRange?.start || defaultDateRange?.start
+  const effectiveEndDate = dateRange?.end || defaultDateRange?.end
   
-  // Fetch data from API if useApiData is true
   const { 
     data: apiData, 
     error: apiError, 
     isLoading: apiLoading 
-  } = useRainfallData(
-    useApiData ? {
-      location: type === "location-total" ? undefined : selectedLocation,
-  startDate: dateRange?.start,
-  endDate: dateRange?.end,
-      sortBy: 'date',
-      order: 'asc',
-      limit: 1000
-    } : {}
-  )
+  } = useRainfallData({
+    location: type === "location-total" ? undefined : selectedLocation,
+    startDate: effectiveStartDate,
+    endDate: effectiveEndDate,
+    sortBy: 'date',
+    order: 'asc',
+    limit: 1000
+  })
 
-  // Determine data source
-  const dataSource = useApiData && apiData?.data?.records 
+  const dataSource = apiData?.data?.records 
     ? transformRainfallDataForCharts(apiData.data.records)
-    : data
+    : []
 
-  // Show loading state
-  if (useApiData && apiLoading) {
+  if (apiLoading) {
     return (
       <div className={`${height} flex items-center justify-center`}>
         <Loader2 className="h-6 w-6 animate-spin" />
@@ -85,8 +73,7 @@ export function RainfallBarChart({
     )
   }
 
-  // Show error state
-  if (useApiData && apiError) {
+  if (apiError) {
     return (
       <div className={`${height} flex items-center justify-center`}>
         <div className="text-center">
@@ -413,11 +400,6 @@ export function RainfallBarChart({
               Type: {type} |
               Aggregated: {aggregatedData.length}
             </p>
-            {useApiData && apiData && (
-              <p className="text-xs text-blue-600 mt-1">
-                API Data Count: {apiData.data?.records.length || 0}
-              </p>
-            )}
             {selectedLocation && selectedLocation !== "all" && dataSource.length > 0 && (
               <p className="text-xs text-yellow-600 mt-1">
                 Locations in data: {Array.from(new Set(dataSource.map(d => d.location))).join(", ")}
