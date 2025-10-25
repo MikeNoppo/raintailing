@@ -221,3 +221,27 @@ export function parseDateRange(
     end: parseDateOnly(endDate, { endOfDay: true })
   }
 }
+
+export function getCurrentMonthRange(): { start: string; end: string } {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth() + 1
+  
+  const start = startOfMonth(year, month)
+  const end = endOfMonth(year, month)
+  
+  return {
+    start: formatDateOnly(start),
+    end: formatDateOnly(end)
+  }
+}
+
+export function getLastNDaysRange(days: number): { start: string; end: string } {
+  const now = new Date()
+  const startDate = addDays(now, -days)
+  
+  return {
+    start: formatDateOnly(startDate),
+    end: formatDateOnly(now)
+  }
+}
