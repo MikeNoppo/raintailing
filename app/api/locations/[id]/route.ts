@@ -4,11 +4,12 @@ import { LocationStatus } from '@prisma/client'
 import { requireAdmin } from '@/lib/api/auth'
 import { successResponse, errorResponse } from '@/lib/api/responses'
 import { prisma } from '@/lib/prisma'
+import type { RouteContext } from '@/lib/types'
 
 // GET /api/locations/[id] - Get specific location (PUBLIC ACCESS)
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: RouteContext
 ) {
   try {
     // Make GET public - no authentication required
@@ -47,7 +48,7 @@ export async function GET(
 // PATCH /api/locations/[id] - Update location (ADMIN ONLY)
 export async function PATCH(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: RouteContext
 ) {
   try {
     const authResult = await requireAdmin()
@@ -103,7 +104,7 @@ export async function PATCH(
 // DELETE /api/locations/[id] - Delete location
 export async function DELETE(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: RouteContext
 ) {
   try {
     const authResult = await requireAdmin()

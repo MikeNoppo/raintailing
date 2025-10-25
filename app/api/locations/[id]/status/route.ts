@@ -4,11 +4,12 @@ import { LocationStatus } from '@prisma/client'
 import { requireAdminOrOperator } from '@/lib/api/auth'
 import { successResponse, errorResponse } from '@/lib/api/responses'
 import { prisma } from '@/lib/prisma'
+import type { RouteContext } from '@/lib/types'
 
 // PATCH /api/locations/[id]/status - Toggle location status (ADMIN ONLY)
 export async function PATCH(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: RouteContext
 ) {
   try {
     const authResult = await requireAdminOrOperator()

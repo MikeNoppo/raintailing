@@ -3,21 +3,16 @@ import { NextRequest } from 'next/server'
 import { requireAuth } from '@/lib/api/auth'
 import { errorResponse, successResponse } from '@/lib/api/responses'
 import { prisma } from '@/lib/prisma'
-
-interface RouteParams {
-  params: Promise<{
-    id: string
-  }>
-}
+import type { RouteContext } from '@/lib/types'
 
 // GET /api/rainfall/[id] - Get specific rainfall data (PUBLIC ACCESS)
 export async function GET(
   request: NextRequest,
-  { params }: RouteParams
+  context: RouteContext
 ) {
   try {
     // Make GET public - no authentication required
-    const { id } = await params
+    const { id } = await context.params
 
     const rainfallData = await prisma.rainfallData.findUnique({
       where: { id },
@@ -55,7 +50,7 @@ export async function GET(
 // PUT /api/rainfall/[id] - Update rainfall data (ADMIN ONLY)
 export async function PUT(
   request: NextRequest,
-  { params }: RouteParams
+  context: RouteContext
 ) {
   try {
     const authResult = await requireAuth()
@@ -70,7 +65,7 @@ export async function PUT(
       return errorResponse('Forbidden - Admin access required', { status: 403 })
     }
 
-    const { id } = await params
+    const { id } = await context.params
     const { date, rainfall, locationId, notes } = await request.json()
 
     // Check if rainfall data exists
@@ -164,7 +159,7 @@ export async function PUT(
 // DELETE /api/rainfall/[id] - Delete rainfall data (ADMIN ONLY)
 export async function DELETE(
   request: NextRequest,
-  { params }: RouteParams
+  context: RouteContext
 ) {
   try {
     const authResult = await requireAuth()
@@ -179,7 +174,7 @@ export async function DELETE(
       return errorResponse('Forbidden - Admin access required', { status: 403 })
     }
 
-    const { id } = await params
+    const { id } = await context.params
 
     // Check if rainfall data exists
     const existingData = await prisma.rainfallData.findUnique({
