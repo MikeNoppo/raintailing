@@ -60,44 +60,62 @@ export async function PATCH(
     const body = await request.json()
     const { name, code, description, status } = body
 
-    // Check if location exists
-    const existingLocation = await prisma.location.findUnique({
-      where: { id }
-    })
+    // Use transaction to ensure data consistency
+    try {
+      const updatedLocation = await prisma.$transaction(async (tx) => {
+        // Check if location exists
+        const existingLocation = await tx.location.findUnique({
+          where: { id }
+        })
 
-    if (!existingLocation) {
-      return errorResponse('Location not found', { status: 404 })
-    }
+        if (!existingLocation) {
+          throw new Error('Location not found')
+        }
 
-    // If code is being updated, check for duplicates
-    if (code && code !== existingLocation.code) {
-      const duplicateCode = await prisma.location.findUnique({
-        where: { code: code.trim().toUpperCase() }
+        // If code is being updated, check for duplicates
+        if (code && code !== existingLocation.code) {
+          const duplicateCode = await tx.location.findUnique({
+            where: { code: code.trim().toUpperCase() }
+          })
+
+          if (duplicateCode) {
+            throw new Error('Location code already exists')
+          }
+        }
+
+        // Update location
+        return await tx.location.update({
+          where: { id },
+          data: {
+            ...(name && { name: name.trim() }),
+            ...(code && { code: code.trim().toUpperCase() }),
+            ...(description !== undefined && { description: description?.trim() || null }),
+            ...(status && { status: status as LocationStatus })
+          }
+        })
       })
 
-      if (duplicateCode) {
-        return errorResponse('Location code already exists', { status: 409 })
+      return successResponse(updatedLocation, {
+        message: 'Location updated successfully'
+      })
+    } catch (error) {
+      console.error('Update location error:', error)
+      
+      // Handle transaction-specific errors
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) {
+          return errorResponse(error.message, { status: 404 })
+        }
+        if (error.message.includes('already exists')) {
+          return errorResponse(error.message, { status: 409 })
+        }
       }
+      
+      return errorResponse('Internal server error')
     }
-
-    // Update location
-    const updatedLocation = await prisma.location.update({
-      where: { id },
-      data: {
-        ...(name && { name: name.trim() }),
-        ...(code && { code: code.trim().toUpperCase() }),
-        ...(description !== undefined && { description: description?.trim() || null }),
-        ...(status && { status: status as LocationStatus })
-      }
-    })
-
-    return successResponse(updatedLocation, {
-      message: 'Location updated successfully'
-    })
-
   } catch (error) {
-    console.error('Error updating location:', error)
-    return errorResponse('Internal Server Error')
+    console.error('Update location request error:', error)
+    return errorResponse('Failed to process request')
   }
 }
 
@@ -114,41 +132,60 @@ export async function DELETE(
 
     const { id } = await context.params
 
-    // Check if location exists
-    const location = await prisma.location.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            rainfallData: true
+    // Use transaction to ensure atomicity
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Check if location exists
+        const location = await tx.location.findUnique({
+          where: { id },
+          include: {
+            _count: {
+              select: {
+                rainfallData: true
+              }
+            }
           }
+        })
+
+        if (!location) {
+          throw new Error('Location not found')
+        }
+
+        // Check if location has related data
+        if (location._count.rainfallData > 0) {
+          throw new Error(`Cannot delete location with existing rainfall data. Set status to INACTIVE instead.|${location._count.rainfallData}`)
+        }
+
+        // Delete location (this will cascade to related thresholds)
+        await tx.location.delete({
+          where: { id }
+        })
+      })
+
+      return successResponse({ id }, {
+        message: 'Location deleted successfully'
+      })
+    } catch (error) {
+      console.error('Delete location error:', error)
+      
+      // Handle transaction-specific errors
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) {
+          return errorResponse('Location not found', { status: 404 })
+        }
+        if (error.message.includes('Cannot delete location')) {
+          const [message, count] = error.message.split('|')
+          return errorResponse(message, {
+            status: 409,
+            details: { rainfallRecords: parseInt(count) }
+          })
         }
       }
-    })
-
-    if (!location) {
-      return errorResponse('Location not found', { status: 404 })
+      
+      return errorResponse('Internal server error')
     }
-
-    // Check if location has related data
-    if (location._count.rainfallData > 0) {
-      return errorResponse('Cannot delete location with existing rainfall data. Set status to INACTIVE instead.', {
-        status: 409,
-        details: { rainfallRecords: location._count.rainfallData }
-      })
-    }
-
-    // Delete location (this will cascade to related thresholds)
-    await prisma.location.delete({
-      where: { id }
-    })
-
-    return successResponse({ id }, {
-      message: 'Location deleted successfully'
-    })
-
   } catch (error) {
-    console.error('Error deleting location:', error)
-    return errorResponse('Internal Server Error')
+    console.error('Delete location request error:', error)
+    return errorResponse('Failed to process request')
   }
 }

@@ -198,26 +198,39 @@ export async function DELETE(
 
     const { id } = await context.params
 
-    // Check if rainfall data exists
-    const existingData = await prisma.rainfallData.findUnique({
-      where: { id }
-    })
+    // Use transaction to ensure atomicity
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Check if rainfall data exists
+        const existingData = await tx.rainfallData.findUnique({
+          where: { id }
+        })
 
-    if (!existingData) {
-      return errorResponse('Rainfall data not found', { status: 404 })
+        if (!existingData) {
+          throw new Error('Rainfall data not found')
+        }
+
+        // Delete rainfall data
+        await tx.rainfallData.delete({
+          where: { id }
+        })
+      })
+
+      return successResponse({ id }, {
+        message: 'Rainfall data deleted successfully'
+      })
+    } catch (error) {
+      console.error('Delete rainfall data error:', error)
+      
+      // Handle transaction-specific errors
+      if (error instanceof Error && error.message.includes('not found')) {
+        return errorResponse(error.message, { status: 404 })
+      }
+      
+      return errorResponse('Internal server error')
     }
-
-    // Delete rainfall data
-    await prisma.rainfallData.delete({
-      where: { id }
-    })
-
-    return successResponse({ id }, {
-      message: 'Rainfall data deleted successfully'
-    })
-
   } catch (error) {
-    console.error('Delete rainfall data error:', error)
-    return errorResponse('Internal server error')
+    console.error('Delete rainfall data request error:', error)
+    return errorResponse('Failed to process request')
   }
 }

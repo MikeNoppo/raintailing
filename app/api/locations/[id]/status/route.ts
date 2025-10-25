@@ -25,27 +25,40 @@ export async function PATCH(
       return errorResponse('Invalid status. Must be ACTIVE, INACTIVE, or MAINTENANCE', { status: 400 })
     }
 
-    // Check if location exists
-    const location = await prisma.location.findUnique({
-      where: { id }
-    })
+    // Use transaction to ensure atomicity
+    try {
+      const updatedLocation = await prisma.$transaction(async (tx) => {
+        // Check if location exists
+        const location = await tx.location.findUnique({
+          where: { id }
+        })
 
-    if (!location) {
-      return errorResponse('Location not found', { status: 404 })
+        if (!location) {
+          throw new Error('Location not found')
+        }
+
+        // Update location status
+        return await tx.location.update({
+          where: { id },
+          data: { status: status as LocationStatus }
+        })
+      })
+
+      return successResponse(updatedLocation, {
+        message: `Location status updated to ${status}`
+      })
+    } catch (error) {
+      console.error('Update location status error:', error)
+      
+      // Handle transaction-specific errors
+      if (error instanceof Error && error.message.includes('not found')) {
+        return errorResponse('Location not found', { status: 404 })
+      }
+      
+      return errorResponse('Internal server error')
     }
-
-    // Update location status
-    const updatedLocation = await prisma.location.update({
-      where: { id },
-      data: { status: status as LocationStatus }
-    })
-
-    return successResponse(updatedLocation, {
-      message: `Location status updated to ${status}`
-    })
-
   } catch (error) {
-    console.error('Error updating location status:', error)
-    return errorResponse('Internal Server Error')
+    console.error('Update location status request error:', error)
+    return errorResponse('Failed to process request')
   }
 }

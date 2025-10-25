@@ -58,31 +58,44 @@ export async function POST(request: NextRequest) {
       return errorResponse('Name and code are required', { status: 400 })
     }
 
-    // Check if location code already exists
-    const existingLocation = await prisma.location.findUnique({
-      where: { code }
-    })
+    // Use transaction to ensure atomicity
+    try {
+      const location = await prisma.$transaction(async (tx) => {
+        // Check if location code already exists
+        const existingLocation = await tx.location.findUnique({
+          where: { code: code.trim().toUpperCase() }
+        })
 
-    if (existingLocation) {
-      return errorResponse('Location code already exists', { status: 409 })
-    }
+        if (existingLocation) {
+          throw new Error('Location code already exists')
+        }
 
-    // Create new location
-    const location = await prisma.location.create({
-      data: {
-        name: name.trim(),
-        code: code.trim().toUpperCase(),
-        description: description?.trim() || null,
-        status: status || 'ACTIVE'
+        // Create new location
+        return await tx.location.create({
+          data: {
+            name: name.trim(),
+            code: code.trim().toUpperCase(),
+            description: description?.trim() || null,
+            status: status || 'ACTIVE'
+          }
+        })
+      })
+
+      return createdResponse(location, {
+        message: 'Location created successfully'
+      })
+    } catch (error) {
+      console.error('Create location error:', error)
+      
+      // Handle transaction-specific errors
+      if (error instanceof Error && error.message.includes('already exists')) {
+        return errorResponse(error.message, { status: 409 })
       }
-    })
-
-    return createdResponse(location, {
-      message: 'Location created successfully'
-    })
-
+      
+      return errorResponse('Internal server error')
+    }
   } catch (error) {
-    console.error('Error creating location:', error)
-    return errorResponse('Internal Server Error')
+    console.error('Create location request error:', error)
+    return errorResponse('Failed to process request')
   }
 }
