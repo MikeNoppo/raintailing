@@ -40,7 +40,13 @@ export async function GET(
       return errorResponse('Rainfall data not found', { status: 404 })
     }
 
-    return successResponse(rainfallData)
+    // Format date to YYYY-MM-DD
+    const formattedData = {
+      ...rainfallData,
+      date: rainfallData.date.toISOString().split('T')[0]
+    }
+
+    return successResponse(formattedData)
 
   } catch (error) {
     console.error('Get rainfall data error:', error)
@@ -151,7 +157,13 @@ export async function PUT(
         })
       })
 
-      return successResponse(updatedData, {
+      // Format date to YYYY-MM-DD
+      const formattedData = {
+        ...updatedData,
+        date: updatedData.date.toISOString().split('T')[0]
+      }
+
+      return successResponse(formattedData, {
         message: 'Rainfall data updated successfully'
       })
     } catch (error) {

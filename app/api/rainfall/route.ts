@@ -70,8 +70,14 @@ export async function GET(request: NextRequest) {
       take: limit
     })
 
+    // Format dates to YYYY-MM-DD for better readability
+    const formattedData = data.map(record => ({
+      ...record,
+      date: record.date.toISOString().split('T')[0] // Convert to YYYY-MM-DD
+    }))
+
     return successResponse({
-      records: data,
+      records: formattedData,
       pagination: {
         page,
         limit,
@@ -171,7 +177,13 @@ export async function POST(request: NextRequest) {
       })
     })
 
-    return createdResponse(rainfallData, {
+    // Format date to YYYY-MM-DD in response
+    const formattedData = {
+      ...rainfallData,
+      date: rainfallData.date.toISOString().split('T')[0]
+    }
+
+    return createdResponse(formattedData, {
       message: 'Rainfall data created successfully'
     })
 
