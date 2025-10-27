@@ -58,7 +58,7 @@ export async function PATCH(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            email: true,
+            username: true,
             role: true,
             createdAt: true,
             updatedAt: true

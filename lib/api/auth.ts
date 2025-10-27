@@ -12,7 +12,6 @@ import { errorResponse } from './responses'
  */
 export interface AuthenticatedUser {
   id: string
-  email: string | null
   name: string | null
   role: UserRole
 }
@@ -43,7 +42,6 @@ export async function requireAuth(): Promise<AuthResult> {
     where: { id: session.user.id },
     select: {
       id: true,
-      email: true,
       name: true,
       role: true
     }

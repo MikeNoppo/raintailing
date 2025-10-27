@@ -10,7 +10,6 @@ async function main() {
   await prisma.user.deleteMany({})
   await prisma.location.deleteMany({})
   await prisma.rainfallData.deleteMany({})
-  await prisma.systemConfig.deleteMany({})
 
     console.log('✅ Existing data cleared')
   console.log('🌱 Starting database seeding...')
