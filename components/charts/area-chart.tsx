@@ -18,13 +18,6 @@ import { formatDateToLocalISO } from "@/lib/utils"
 import { getCurrentMonthRange } from "@/lib/utils/date-helpers"
 import { generateChartColor } from "@/lib/utils/chart-colors"
 
-interface Location {
-  id: string;
-  name: string;
-  code: string;
-  status: string;
-}
-
 interface RainfallAreaChartProps {
   filteredLocation?: string
   dateRange?: { from: Date; to: Date }
