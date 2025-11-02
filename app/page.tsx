@@ -13,9 +13,25 @@ import { TAB_IDS, DASHBOARD_CONFIG } from "@/lib/constants/dashboard"
 
 function DashboardContent() {
   const [activeTab, setActiveTab] = useState<string>(DASHBOARD_CONFIG.DEFAULT_TAB)
-  const [filters, setFilters] = useState({
-    location: "all",
-    dateRange: undefined as { from: Date; to: Date } | undefined
+  const [filters, setFilters] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dashboardFilters')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          return {
+            location: parsed.location || "all",
+            dateRange: parsed.dateRange ? {
+              from: new Date(parsed.dateRange.from),
+              to: new Date(parsed.dateRange.to)
+            } : undefined
+          }
+        } catch {
+          return { location: "all", dateRange: undefined }
+        }
+      }
+    }
+    return { location: "all", dateRange: undefined }
   })
   const [hasManuallyCleared, setHasManuallyCleared] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -76,6 +92,11 @@ function DashboardContent() {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('dateRangeManuallyCleared')
       }
+    }
+    
+    // Save filters to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dashboardFilters', JSON.stringify(newFilters))
     }
     
     setFilters({
