@@ -50,7 +50,7 @@ export function AreaChart({
     order: 'asc'
   })
 
-  const locations = apiLocations || []
+  const locations = React.useMemo(() => apiLocations || [], [apiLocations])
 
   const chartDataWithLocations = React.useMemo(() => {
     const dataSource = apiData?.data?.records 
