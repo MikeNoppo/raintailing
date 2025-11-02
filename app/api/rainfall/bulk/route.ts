@@ -5,6 +5,27 @@ import { createdResponse, errorResponse } from '@/lib/api/responses'
 import { prisma } from '@/lib/prisma'
 import { parseISODate } from '@/lib/utils/date-helpers'
 
+function parseDateToUTC(dateString: string): Date | null {
+  const parts = dateString.trim().split('-')
+  if (parts.length !== 3) return null
+  
+  const day = parseInt(parts[0])
+  const monthMap: Record<string, number> = {
+    'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
+    'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+  }
+  const month = monthMap[parts[1].toLowerCase()]
+  let year = parseInt(parts[2])
+  
+  if (isNaN(day) || month === undefined || isNaN(year)) return null
+  
+  if (year < 100) {
+    year += 2000
+  }
+  
+  return new Date(Date.UTC(year, month, day, 0, 0, 0, 0))
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authResult = await requireAuth()
@@ -246,7 +267,6 @@ export async function POST(request: NextRequest) {
           continue;
         }
         
-        // Skip baris summary/total
         if (dateValue.toLowerCase().includes('total') || 
             dateValue.toLowerCase().includes('average') || 
             dateValue.toLowerCase().includes('peak') || 
@@ -255,9 +275,12 @@ export async function POST(request: NextRequest) {
           continue;
         }
         
-        const date = new Date(dateValue)
-        if (isNaN(date.getTime())) {
-          continue;
+        let date = parseDateToUTC(dateValue)
+        if (!date) {
+          date = new Date(dateValue)
+          if (isNaN(date.getTime())) {
+            continue;
+          }
         }
         
         locationColumns.forEach(({ columnIndex, locationName }) => {
