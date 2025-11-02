@@ -17,6 +17,7 @@ function DashboardContent() {
     location: "all",
     dateRange: undefined as { from: Date; to: Date } | undefined
   })
+  const [hasManuallyCleared, setHasManuallyCleared] = useState(false)
   const searchParams = useSearchParams()
   const { isAuthenticated, logout, requireAuth } = useAuth()
   const { latestMonth } = useAvailableDates({
@@ -31,7 +32,7 @@ function DashboardContent() {
   }, [searchParams, isAuthenticated])
 
   useEffect(() => {
-    if (latestMonth && !filters.dateRange) {
+    if (latestMonth && !filters.dateRange && !hasManuallyCleared) {
       const [year, month] = latestMonth.split('-').map(Number)
       const startDate = new Date(Date.UTC(year, month - 1, 1))
       const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
@@ -42,7 +43,7 @@ function DashboardContent() {
         dateRange: { from: startDate, to: endDate }
       }))
     }
-  }, [latestMonth, filters.dateRange])
+  }, [latestMonth, filters.dateRange, hasManuallyCleared])
 
   const handleAdminAccess = () => {
     requireAuth(() => setActiveTab(TAB_IDS.ADMIN))
@@ -59,6 +60,13 @@ function DashboardContent() {
     location: string;
     dateRange?: { from: Date; to: Date };
   }) => {
+    // Track if user manually cleared the date range
+    if (!newFilters.dateRange && filters.dateRange) {
+      setHasManuallyCleared(true)
+    } else if (newFilters.dateRange) {
+      setHasManuallyCleared(false)
+    }
+    
     setFilters({
       location: newFilters.location,
       dateRange: newFilters.dateRange
