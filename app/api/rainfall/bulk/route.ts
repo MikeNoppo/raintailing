@@ -23,9 +23,10 @@ export async function POST(request: NextRequest) {
       userId?: string | null;
     }> = []
 
-    // Ambil semua lokasi aktif untuk validasi
     const locations = await prisma.location.findMany({ where: { status: 'ACTIVE' }})
-    const locationMapByName = new Map(locations.map(loc => [loc.name, loc.id]))
+    const locationMapByName = new Map(
+      locations.map(loc => [loc.name.toLowerCase(), loc.id])
+    )
     const locationIdSet = new Set(locations.map(loc => loc.id))
 
     if (contentType.includes('application/json')) {
@@ -208,9 +209,8 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Validasi apakah ada lokasi yang cocok
       const matchedLocations = locationColumns.filter(col => 
-        locationMapByName.has(col.locationName)
+        locationMapByName.has(col.locationName.toLowerCase())
       )
       
       if (matchedLocations.length === 0) {
@@ -260,13 +260,12 @@ export async function POST(request: NextRequest) {
           continue;
         }
         
-        // Parse data untuk setiap lokasi
         locationColumns.forEach(({ columnIndex, locationName }) => {
           if (columnIndex < values.length) {
             const rainfallValue = values[columnIndex]
             const normalizedValue = rainfallValue.replace(',', '.')
             const rainfall = parseFloat(normalizedValue)
-            const locationId = locationMapByName.get(locationName)
+            const locationId = locationMapByName.get(locationName.toLowerCase())
             
             if (locationId && !isNaN(rainfall) && rainfall >= 0) {
               rainfallDataToCreate.push({

@@ -8,6 +8,7 @@ import { Header } from "@/components/layout/header"
 import { DashboardStats } from "@/components/dashboard/dashboard-stats"
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts"
 import { useAuth } from "@/lib/hooks/useAuth"
+import { useAvailableDates } from "@/lib/hooks/useAvailableDates"
 import { TAB_IDS, DASHBOARD_CONFIG } from "@/lib/constants/dashboard"
 
 function DashboardContent() {
@@ -18,14 +19,30 @@ function DashboardContent() {
   })
   const searchParams = useSearchParams()
   const { isAuthenticated, logout, requireAuth } = useAuth()
+  const { latestMonth } = useAvailableDates({
+    location: filters.location !== "all" ? filters.location : undefined
+  })
 
   useEffect(() => {
-    // Check if redirected from login with admin tab
     const tab = searchParams.get("tab")
     if (tab === TAB_IDS.ADMIN && isAuthenticated) {
       setActiveTab(TAB_IDS.ADMIN)
     }
   }, [searchParams, isAuthenticated])
+
+  useEffect(() => {
+    if (latestMonth && !filters.dateRange) {
+      const [year, month] = latestMonth.split('-').map(Number)
+      const startDate = new Date(Date.UTC(year, month - 1, 1))
+      const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
+      const endDate = new Date(Date.UTC(year, month - 1, lastDay, 23, 59, 59, 999))
+      
+      setFilters(prev => ({
+        ...prev,
+        dateRange: { from: startDate, to: endDate }
+      }))
+    }
+  }, [latestMonth, filters.dateRange])
 
   const handleAdminAccess = () => {
     requireAuth(() => setActiveTab(TAB_IDS.ADMIN))

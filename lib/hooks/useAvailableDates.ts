@@ -1,13 +1,16 @@
 import useSWR from 'swr'
 
-// Types
 interface AvailableDatesPayload {
+  latestDate: string | null
+  earliestDate: string | null
+  latestMonth: string | null
+  earliestMonth: string | null
+  totalRecords: number
   months: Array<{
     year: number
     month: number
     count: number
   }>
-  total: number
 }
 
 interface AvailableDatesResponse {
@@ -21,7 +24,6 @@ interface AvailableDatesFilters {
   location?: string
 }
 
-// Fetcher function
 const fetcher = async (url: string) => {
   const response = await fetch(url)
   if (!response.ok) {
@@ -31,7 +33,6 @@ const fetcher = async (url: string) => {
   return response.json()
 }
 
-// Hook for fetching available dates
 export function useAvailableDates(filters: AvailableDatesFilters = {}) {
   const queryParams = new URLSearchParams()
   
@@ -48,14 +49,19 @@ export function useAvailableDates(filters: AvailableDatesFilters = {}) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 0, // No auto-refresh by default
-      dedupingInterval: 60000, // Cache for 1 minute
+      refreshInterval: 30000,
+      dedupingInterval: 10000,
     }
   )
 
   return {
-    data: data?.data?.months || [],
-    total: data?.data?.total || 0,
+    data: data?.data || null,
+    months: data?.data?.months || [],
+    latestMonth: data?.data?.latestMonth || null,
+    earliestMonth: data?.data?.earliestMonth || null,
+    latestDate: data?.data?.latestDate || null,
+    earliestDate: data?.data?.earliestDate || null,
+    totalRecords: data?.data?.totalRecords || 0,
     error,
     isLoading,
     refetch: mutate,

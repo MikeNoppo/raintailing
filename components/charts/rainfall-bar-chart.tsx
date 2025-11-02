@@ -4,8 +4,9 @@ import { Bar } from "react-chartjs-2"
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js"
 import { Loader2 } from "lucide-react"
 import { useRainfallData } from "@/lib/hooks"
+import { useAvailableDates } from "@/lib/hooks/useAvailableDates"
 import { transformRainfallDataForCharts } from "@/lib/utils/data-transformers"
-import { getCurrentMonthRange } from "@/lib/utils/date-helpers"
+import * as React from "react"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
@@ -43,9 +44,26 @@ export function RainfallBarChart({
   selectedLocation,
   height = "h-80"
 }: RainfallBarChartProps) {
-  const defaultDateRange = !dateRange?.start && !dateRange?.end ? getCurrentMonthRange() : null
-  const effectiveStartDate = dateRange?.start || defaultDateRange?.start
-  const effectiveEndDate = dateRange?.end || defaultDateRange?.end
+  const { latestMonth, isLoading: datesLoading } = useAvailableDates({
+    location: type === "location-total" ? undefined : selectedLocation
+  })
+
+  const smartDefaultRange = React.useMemo(() => {
+    if (!latestMonth) return null
+    
+    const [year, month] = latestMonth.split('-').map(Number)
+    const startDate = new Date(Date.UTC(year, month - 1, 1))
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
+    const endDate = new Date(Date.UTC(year, month - 1, lastDay, 23, 59, 59, 999))
+    
+    return {
+      start: startDate.toISOString().split('T')[0],
+      end: endDate.toISOString().split('T')[0]
+    }
+  }, [latestMonth])
+
+  const effectiveStartDate = dateRange?.start || smartDefaultRange?.start
+  const effectiveEndDate = dateRange?.end || smartDefaultRange?.end
   
   const { 
     data: apiData, 
@@ -64,7 +82,7 @@ export function RainfallBarChart({
     ? transformRainfallDataForCharts(apiData.data.records)
     : []
 
-  if (apiLoading) {
+  if (apiLoading || datesLoading) {
     return (
       <div className={`${height} flex items-center justify-center`}>
         <Loader2 className="h-6 w-6 animate-spin" />

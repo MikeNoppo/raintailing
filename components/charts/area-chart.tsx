@@ -14,9 +14,16 @@ import {
 import { Loader2 } from "lucide-react"
 import { useRainfallData } from "@/lib/hooks"
 import { useLocations } from "@/lib/hooks/useLocations"
+import { useAvailableDates } from "@/lib/hooks/useAvailableDates"
 import { formatDateToLocalISO } from "@/lib/utils"
-import { getCurrentMonthRange } from "@/lib/utils/date-helpers"
 import { generateChartColor } from "@/lib/utils/chart-colors"
+
+interface Location {
+  id: string;
+  name: string;
+  code: string;
+  status: string;
+}
 
 interface RainfallAreaChartProps {
   filteredLocation?: string
@@ -33,9 +40,27 @@ export function AreaChart({
     refreshInterval: 60000 
   })
 
-  const defaultDateRange = !dateRange?.from && !dateRange?.to ? getCurrentMonthRange() : null
-  const effectiveStartDate = dateRange?.from ? formatDateToLocalISO(dateRange.from) : defaultDateRange?.start
-  const effectiveEndDate = dateRange?.to ? formatDateToLocalISO(dateRange.to) : defaultDateRange?.end
+  const { latestMonth, isLoading: datesLoading } = useAvailableDates({
+    location: filteredLocation !== "all" ? filteredLocation : undefined
+  })
+
+  const smartDefaultRange = React.useMemo(() => {
+    if (!latestMonth) return null
+    
+    const [year, month] = latestMonth.split('-').map(Number)
+    const startDate = new Date(Date.UTC(year, month - 1, 1))
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
+    const endDate = new Date(Date.UTC(year, month - 1, lastDay, 23, 59, 59, 999))
+    
+    return { start: formatDateToLocalISO(startDate), end: formatDateToLocalISO(endDate) }
+  }, [latestMonth])
+
+  const effectiveStartDate = dateRange?.from 
+    ? formatDateToLocalISO(dateRange.from) 
+    : smartDefaultRange?.start
+  const effectiveEndDate = dateRange?.to 
+    ? formatDateToLocalISO(dateRange.to) 
+    : smartDefaultRange?.end
 
   const { 
     data: apiData, 
@@ -110,7 +135,7 @@ export function AreaChart({
     return config
   }, [displayedLocations])
 
-  if (apiLoading || locationsLoading) {
+  if (apiLoading || locationsLoading || datesLoading) {
     return (
       <Card>
         <CardHeader>
