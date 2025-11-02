@@ -17,7 +17,12 @@ function DashboardContent() {
     location: "all",
     dateRange: undefined as { from: Date; to: Date } | undefined
   })
-  const [hasManuallyCleared, setHasManuallyCleared] = useState(false)
+  const [hasManuallyCleared, setHasManuallyCleared] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('dateRangeManuallyCleared') === 'true'
+    }
+    return false
+  })
   const searchParams = useSearchParams()
   const { isAuthenticated, logout, requireAuth } = useAuth()
   const { latestMonth } = useAvailableDates({
@@ -63,8 +68,14 @@ function DashboardContent() {
     // Track if user manually cleared the date range
     if (!newFilters.dateRange && filters.dateRange) {
       setHasManuallyCleared(true)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('dateRangeManuallyCleared', 'true')
+      }
     } else if (newFilters.dateRange) {
       setHasManuallyCleared(false)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('dateRangeManuallyCleared')
+      }
     }
     
     setFilters({
