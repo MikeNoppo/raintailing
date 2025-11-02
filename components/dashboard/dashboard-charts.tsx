@@ -38,7 +38,6 @@ export function DashboardCharts({
       <AreaChart 
         filteredLocation={filters.location}
         dateRange={filters.dateRange}
-        useApiData={useApiData}
       />
 
       {/* Charts Grid */}
@@ -55,7 +54,6 @@ export function DashboardCharts({
               <RainfallChart 
                 selectedLocation={filters.location !== "all" ? filters.location : undefined}
                 dateRange={dateRange}
-                useApiData={true}
               />
             ) : (
               <RainfallChart />
@@ -85,7 +83,6 @@ export function DashboardCharts({
               <RainfallBarChart 
                 selectedLocation={filters.location !== "all" ? filters.location : undefined}
                 dateRange={dateRange}
-                useApiData={true}
                 type={filters.location !== "all" ? "daily" : "location-total"}
               />
             ) : (
@@ -107,13 +104,11 @@ export function DashboardCharts({
           showAsDonut={false}
           title="Klasifikasi Curah Hujan"
           description={useApiData ? "Proporsi kategori dari database" : "Proporsi kategori curah hujan (Pie Chart)"}
-          useApiData={useApiData}
         />
         
         <RainfallClassificationSummary 
           location={filters.location !== "all" ? filters.location : undefined}
           dateRange={dateRange}
-          useApiData={useApiData}
         />
       </div>
     </>
