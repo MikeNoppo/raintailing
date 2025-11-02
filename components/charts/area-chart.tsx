@@ -18,13 +18,6 @@ import { useAvailableDates } from "@/lib/hooks/useAvailableDates"
 import { formatDateToLocalISO } from "@/lib/utils"
 import { generateChartColor } from "@/lib/utils/chart-colors"
 
-interface Location {
-  id: string;
-  name: string;
-  code: string;
-  status: string;
-}
-
 interface RainfallAreaChartProps {
   filteredLocation?: string
   dateRange?: { from: Date; to: Date }
