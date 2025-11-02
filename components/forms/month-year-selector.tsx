@@ -22,12 +22,12 @@ export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearS
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
 
-  const { data: availableMonths, isLoading, error, refetch } = useAvailableDates({
+  const { months, isLoading, error, refetch } = useAvailableDates({
     location: currentLocation
   })
 
-  const availableYears = getAvailableYears(availableMonths)
-  const availableMonthsForYear = selectedYear ? getAvailableMonthsForYear(availableMonths, selectedYear) : []
+  const availableYears = getAvailableYears(months)
+  const availableMonthsForYear = selectedYear ? getAvailableMonthsForYear(months, selectedYear) : []
 
   useEffect(() => {
     if (open) {
@@ -172,7 +172,7 @@ export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearS
             </Card>
           )}
 
-          {!isLoading && !error && availableMonths.length === 0 && (
+          {!isLoading && !error && months.length === 0 && (
             <Card className="bg-yellow-50 border-yellow-200">
               <CardContent className="pt-4">
                 <div className="text-sm text-yellow-700">
@@ -185,7 +185,7 @@ export function MonthYearSelector({ open, onClose, currentLocation }: MonthYearS
             </Card>
           )}
 
-          {!isLoading && !error && availableMonths.length > 0 && (
+          {!isLoading && !error && months.length > 0 && (
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Mode Export</label>
