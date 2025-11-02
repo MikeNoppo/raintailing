@@ -16,43 +16,7 @@ import { useRainfallData } from "@/lib/hooks"
 import { useLocations } from "@/lib/hooks/useLocations"
 import { formatDateToLocalISO } from "@/lib/utils"
 import { getCurrentMonthRange } from "@/lib/utils/date-helpers"
-
-// Default locations based on location-management.tsx
-const defaultLocations: Location[] = [
-  { id: "1", name: "Gosowong Pit", code: "GSW-PIT", status: "active" },
-  { id: "2", name: "Gosowong Helipad (DP3)", code: "GSW-DP3", status: "active" },
-  { id: "3", name: "Tailing dam (TSF)", code: "TSF", status: "active" },
-  { id: "4", name: "Kencana (Portal)", code: "KNC-PRT", status: "active" },
-  { id: "5", name: "Toguraci (Portal)", code: "TGR-PRT", status: "active" },
-  { id: "6", name: "Gosowong North", code: "GSW-NTH", status: "active" },
-]
-
-const chartConfig = {
-  "GSW-PIT": {
-    label: "Gosowong Pit",
-    color: "hsl(220, 70%, 50%)", // Blue
-  },
-  "GSW-DP3": {
-    label: "Gosowong Helipad (DP3)",
-    color: "hsl(142, 76%, 36%)", // Green
-  },
-  "TSF": {
-    label: "Tailing dam (TSF)",
-    color: "hsl(47, 96%, 53%)", // Yellow
-  },
-  "KNC-PRT": {
-    label: "Kencana (Portal)",
-    color: "hsl(280, 87%, 47%)", // Purple
-  },
-  "TGR-PRT": {
-    label: "Toguraci (Portal)",
-    color: "hsl(348, 83%, 47%)", // Red - Special color for Toguraci
-  },
-  "GSW-NTH": {
-    label: "Gosowong North",
-    color: "hsl(24, 90%, 50%)", // Orange
-  },
-} satisfies ChartConfig
+import { generateChartColor } from "@/lib/utils/chart-colors"
 
 interface Location {
   id: string;
@@ -93,7 +57,7 @@ export function AreaChart({
     order: 'asc'
   })
 
-  const locations = apiLocations || defaultLocations
+  const locations = apiLocations || []
 
   const chartDataWithLocations = React.useMemo(() => {
     const dataSource = apiData?.data?.records 
@@ -144,10 +108,10 @@ export function AreaChart({
 
   const dynamicChartConfig = React.useMemo(() => {
     const config: ChartConfig = {}
-    displayedLocations.forEach((location) => {
+    displayedLocations.forEach((location, index) => {
       config[location.code] = {
         label: location.name,
-        color: chartConfig[location.code as keyof typeof chartConfig]?.color || "hsl(0, 0%, 50%)",
+        color: generateChartColor(index),
       }
     })
     return config
@@ -259,21 +223,21 @@ export function AreaChart({
               }
             />
             <defs>
-              {displayedLocations.map((location) => (
+              {displayedLocations.map((location, index) => (
                 <linearGradient key={location.code} id={`fill${location.code}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={chartConfig[location.code as keyof typeof chartConfig]?.color || "hsl(0, 0%, 50%)"} stopOpacity={0.8} />
-                  <stop offset="95%" stopColor={chartConfig[location.code as keyof typeof chartConfig]?.color || "hsl(0, 0%, 50%)"} stopOpacity={0.1} />
+                  <stop offset="5%" stopColor={generateChartColor(index)} stopOpacity={0.8} />
+                  <stop offset="95%" stopColor={generateChartColor(index)} stopOpacity={0.1} />
                 </linearGradient>
               ))}
             </defs>
-            {displayedLocations.map((location) => (
+            {displayedLocations.map((location, index) => (
               <Area
                 key={location.code}
                 dataKey={location.code}
                 type="natural"
                 fill={`url(#fill${location.code})`}
                 fillOpacity={0.4}
-                stroke={chartConfig[location.code as keyof typeof chartConfig]?.color || "hsl(0, 0%, 50%)"}
+                stroke={generateChartColor(index)}
                 stackId="a"
               />
             ))}

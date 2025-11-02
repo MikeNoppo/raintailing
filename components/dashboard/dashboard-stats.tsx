@@ -15,23 +15,6 @@ interface DashboardStatsProps {
   useApiData?: boolean
 }
 
-// Lokasi untuk rotation
-const LOCATIONS = ["GSW-PIT", "GSW-DP3", "TSF", "KNC-PRT", "TGR-PRT", "GSW-NTH"]
-
-// Mapping nama lokasi
-const getLocationName = (code: string) => {
-  const locationMap: { [key: string]: string } = {
-    "GSW-PIT": "Gosowong Pit",
-    "GSW-DP3": "Gosowong DP3", 
-    "TSF": "Tailing Dam",
-    "KNC-PRT": "Kencana Portal",
-    "TGR-PRT": "Toguraci Portal",
-    "GSW-NTH": "Gosowong North"
-  }
-  return locationMap[code] || code
-}
-
-// Hitung perubahan mingguan (simulasi berdasarkan data)
 const calculateWeeklyChange = (data: RainfallData[]) => {
   if (data.length < 7) return "+0% dari minggu lalu"
   
@@ -87,25 +70,27 @@ export function DashboardStats({ data: propData, selectedLocation, useApiData = 
   // Calculate active stations count from API or fallback to default
   const activeStationsCount = useApiData && apiLocations 
     ? apiLocations.filter(loc => loc.status === 'ACTIVE').length
-    : DASHBOARD_CONFIG.TOTAL_STATIONS
+    : 0
 
-  // Auto-rotate locations setiap 3 detik ketika tidak ada lokasi yang dipilih
+  const activeLocationCodes = useApiData && apiLocations
+    ? apiLocations.filter(loc => loc.status === 'ACTIVE').map(loc => loc.code)
+    : []
+
   useEffect(() => {
-    if (!selectedLocation || selectedLocation === "all") {
+    if ((!selectedLocation || selectedLocation === "all") && activeLocationCodes.length > 0) {
       const interval = setInterval(() => {
         setIsAnimating(true)
         
-        // Delay untuk animasi fade-out
         setTimeout(() => {
-          setCurrentLocationIndex((prev) => (prev + 1) % LOCATIONS.length)
+          setCurrentLocationIndex((prev) => (prev + 1) % activeLocationCodes.length)
           setIsAnimating(false)
-        }, 200) // 200ms fade-out duration
+        }, 200)
         
-      }, 3000) // 3 detik
+      }, 3000)
       
       return () => clearInterval(interval)
     }
-  }, [selectedLocation])
+  }, [selectedLocation, activeLocationCodes.length])
 
   // Loading state for API data
   if (useApiData && (apiLoading || locationsLoading)) {
@@ -147,12 +132,14 @@ export function DashboardStats({ data: propData, selectedLocation, useApiData = 
     )
   }
   
-  // Tentukan lokasi yang akan ditampilkan
   const displayLocation = selectedLocation && selectedLocation !== "all" 
     ? selectedLocation 
-    : LOCATIONS[currentLocationIndex]
+    : activeLocationCodes[currentLocationIndex]
+
+  const displayLocationName = useApiData && apiLocations && displayLocation
+    ? apiLocations.find(loc => loc.code === displayLocation)?.name || displayLocation
+    : displayLocation
   
-  // Filter data berdasarkan lokasi yang ditampilkan
   const locationData = data.filter(item => item.location === displayLocation)
   
   // Hitung stats berdasarkan data lokasi
@@ -177,7 +164,7 @@ export function DashboardStats({ data: propData, selectedLocation, useApiData = 
                   isAnimating ? 'opacity-0 transform translate-y-1' : 'opacity-100 transform translate-y-0'
                 }`}
               >
-                {getLocationName(displayLocation)}
+                {displayLocationName}
               </span>
             )}
           </CardTitle>
@@ -218,7 +205,7 @@ export function DashboardStats({ data: propData, selectedLocation, useApiData = 
                   isAnimating ? 'opacity-0 transform translate-y-1' : 'opacity-100 transform translate-y-0'
                 }`}
               >
-                {getLocationName(displayLocation)}
+                {displayLocationName}
               </span>
             )}
           </CardTitle>

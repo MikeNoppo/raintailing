@@ -23,7 +23,6 @@ export const RAINFALL_STATUS = {
 
 // Dashboard configuration
 export const DASHBOARD_CONFIG = {
-  TOTAL_STATIONS: 6,
   DEFAULT_TAB: "dashboard"
 } as const
 
