@@ -291,13 +291,13 @@ export function FilterControls({ filters, onFilterChange }: FilterControlsProps)
                   size="sm"
                   onClick={() => {
                     const today = new Date()
-                    const lastYear = new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000)
-                    const range = { from: lastYear, to: today }
+                    const threeMonthsAgo = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000)
+                    const range = { from: threeMonthsAgo, to: today }
                     handleDateRangeChange(range)
                   }}
                   className="text-xs bg-white border-gray-300 hover:bg-gray-50"
                 >
-                  1 Tahun
+                  3 Bulan
                 </Button>
               </div>
             </div>
