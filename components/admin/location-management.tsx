@@ -38,14 +38,18 @@ export function LocationManagement() {
   const [formData, setFormData] = useState({
     name: "",
     code: "",
-    description: ""
+    description: "",
+    latitude: "",
+    longitude: ""
   })
 
   const resetForm = () => {
     setFormData({
       name: "",
       code: "",
-      description: ""
+      description: "",
+      latitude: "",
+      longitude: ""
     })
     setEditingLocation(null)
   }
@@ -63,6 +67,8 @@ export function LocationManagement() {
         name: formData.name.trim(),
         code: formData.code.trim().toUpperCase(),
         description: formData.description.trim() || undefined,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
       }
 
       if (editingLocation) {
@@ -77,7 +83,6 @@ export function LocationManagement() {
       resetForm()
       refetch()
     } catch {
-      // Error handling sudah ada di hook
     }
   }
 
@@ -86,7 +91,9 @@ export function LocationManagement() {
     setFormData({
       name: location.name,
       code: location.code,
-      description: location.description || ""
+      description: location.description || "",
+      latitude: location.latitude?.toString() || "",
+      longitude: location.longitude?.toString() || ""
     })
     setIsDialogOpen(true)
   }
@@ -219,6 +226,32 @@ export function LocationManagement() {
                           disabled={mutationLoading}
                         />
                       </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="latitude">Latitude</Label>
+                          <Input
+                            id="latitude"
+                            type="number"
+                            step="any"
+                            value={formData.latitude}
+                            onChange={(e) => setFormData(prev => ({ ...prev, latitude: e.target.value }))}
+                            placeholder="-90 hingga 90"
+                            disabled={mutationLoading}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="longitude">Longitude</Label>
+                          <Input
+                            id="longitude"
+                            type="number"
+                            step="any"
+                            value={formData.longitude}
+                            onChange={(e) => setFormData(prev => ({ ...prev, longitude: e.target.value }))}
+                            placeholder="-180 hingga 180"
+                            disabled={mutationLoading}
+                          />
+                        </div>
+                      </div>
                     </div>
                     <DialogFooter>
                       <Button 
@@ -247,6 +280,7 @@ export function LocationManagement() {
                 <TableRow>
                   <TableHead>Nama Lokasi</TableHead>
                   <TableHead>Kode</TableHead>
+                  <TableHead>Koordinat</TableHead>
                   <TableHead>Deskripsi</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
@@ -260,7 +294,16 @@ export function LocationManagement() {
                       <Badge variant="secondary">{location.code}</Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="max-w-[200px] truncate" title={location.description || ""}>
+                      {location.latitude && location.longitude ? (
+                        <div className="text-sm">
+                          <div>{location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}</div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-[150px] truncate" title={location.description || ""}>
                         {location.description || "-"}
                       </div>
                     </TableCell>
@@ -297,7 +340,7 @@ export function LocationManagement() {
                 ))}
                 {locations.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                       Belum ada data lokasi. Tambahkan lokasi baru untuk memulai.
                     </TableCell>
                   </TableRow>

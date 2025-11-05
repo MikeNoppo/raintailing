@@ -58,12 +58,18 @@ export async function PATCH(
 
     const { id } = await context.params
     const body = await request.json()
-    const { name, code, description, status } = body
+    const { name, code, description, latitude, longitude, status } = body
 
-    // Use transaction to ensure data consistency
+    if (latitude !== undefined && latitude !== null && (latitude < -90 || latitude > 90)) {
+      return errorResponse('Latitude must be between -90 and 90', { status: 400 })
+    }
+
+    if (longitude !== undefined && longitude !== null && (longitude < -180 || longitude > 180)) {
+      return errorResponse('Longitude must be between -180 and 180', { status: 400 })
+    }
+
     try {
       const updatedLocation = await prisma.$transaction(async (tx) => {
-        // Check if location exists
         const existingLocation = await tx.location.findUnique({
           where: { id }
         })
@@ -72,7 +78,6 @@ export async function PATCH(
           throw new Error('Location not found')
         }
 
-        // If code is being updated, check for duplicates
         if (code && code !== existingLocation.code) {
           const duplicateCode = await tx.location.findUnique({
             where: { code: code.trim().toUpperCase() }
@@ -83,13 +88,14 @@ export async function PATCH(
           }
         }
 
-        // Update location
         return await tx.location.update({
           where: { id },
           data: {
             ...(name && { name: name.trim() }),
             ...(code && { code: code.trim().toUpperCase() }),
             ...(description !== undefined && { description: description?.trim() || null }),
+            ...(latitude !== undefined && { latitude: latitude !== null ? parseFloat(latitude) : null }),
+            ...(longitude !== undefined && { longitude: longitude !== null ? parseFloat(longitude) : null }),
             ...(status && { status: status as LocationStatus })
           }
         })

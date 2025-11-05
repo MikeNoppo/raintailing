@@ -51,11 +51,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, code, description, status } = body
+    const { name, code, description, latitude, longitude, status } = body
 
-    // Validate required fields
     if (!name || !code) {
       return errorResponse('Name and code are required', { status: 400 })
+    }
+
+    if (latitude !== undefined && (latitude < -90 || latitude > 90)) {
+      return errorResponse('Latitude must be between -90 and 90', { status: 400 })
+    }
+
+    if (longitude !== undefined && (longitude < -180 || longitude > 180)) {
+      return errorResponse('Longitude must be between -180 and 180', { status: 400 })
     }
 
     // Use transaction to ensure atomicity
@@ -70,12 +77,13 @@ export async function POST(request: NextRequest) {
           throw new Error('Location code already exists')
         }
 
-        // Create new location
         return await tx.location.create({
           data: {
             name: name.trim(),
             code: code.trim().toUpperCase(),
             description: description?.trim() || null,
+            latitude: latitude !== undefined ? parseFloat(latitude) : null,
+            longitude: longitude !== undefined ? parseFloat(longitude) : null,
             status: status || 'ACTIVE'
           }
         })

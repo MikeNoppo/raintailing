@@ -6,6 +6,8 @@ export interface Location {
   name: string
   code: string
   description: string | null
+  latitude: number | null
+  longitude: number | null
   status: LocationStatus
   createdAt: string
   updatedAt: string
@@ -22,6 +24,8 @@ export interface CreateLocationData {
   name: string
   code: string
   description?: string
+  latitude?: number
+  longitude?: number
   status?: LocationStatus
 }
 
@@ -29,6 +33,8 @@ export interface UpdateLocationData {
   name?: string
   code?: string
   description?: string
+  latitude?: number | null
+  longitude?: number | null
   status?: LocationStatus
 }
 
