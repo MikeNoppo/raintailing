@@ -39,8 +39,7 @@ export function LocationManagement() {
     name: "",
     code: "",
     description: "",
-    latitude: "",
-    longitude: ""
+    coordinates: ""
   })
 
   const resetForm = () => {
@@ -48,10 +47,74 @@ export function LocationManagement() {
       name: "",
       code: "",
       description: "",
-      latitude: "",
-      longitude: ""
+      coordinates: ""
     })
     setEditingLocation(null)
+  }
+
+  const parseCoordinates = (coordStr: string): { latitude?: number; longitude?: number } => {
+    if (!coordStr.trim()) return {}
+
+    try {
+      const parts = coordStr.split(',').map(s => s.trim())
+      if (parts.length !== 2) return {}
+
+      const parseDMS = (dmsStr: string): number | null => {
+        const dmsPattern = /(\d+)°\s*(\d+)?'?\s*(\d+(?:\.\d+)?)?"?\s*(LS|LU|BT|BB|S|N|E|W)?/i
+        const match = dmsStr.match(dmsPattern)
+        
+        if (!match) {
+          const decimalMatch = dmsStr.match(/-?\d+\.?\d*/)
+          return decimalMatch ? parseFloat(decimalMatch[0]) : null
+        }
+
+        const degrees = parseInt(match[1])
+        const minutes = match[2] ? parseInt(match[2]) : 0
+        const seconds = match[3] ? parseFloat(match[3]) : 0
+        const direction = match[4]?.toUpperCase()
+
+        let decimal = degrees + minutes / 60 + seconds / 3600
+
+        if (direction === 'LS' || direction === 'S' || direction === 'BB' || direction === 'W') {
+          decimal = -decimal
+        }
+
+        return decimal
+      }
+
+      const lat = parseDMS(parts[0])
+      const lon = parseDMS(parts[1])
+
+      return {
+        latitude: lat !== null ? lat : undefined,
+        longitude: lon !== null ? lon : undefined
+      }
+    } catch {
+      return {}
+    }
+  }
+
+  const formatCoordinates = (lat: number | null, lon: number | null): string => {
+    if (lat === null || lon === null) return ""
+    
+    const formatDMS = (decimal: number, isLatitude: boolean): string => {
+      const absolute = Math.abs(decimal)
+      const degrees = Math.floor(absolute)
+      const minutesDecimal = (absolute - degrees) * 60
+      const minutes = Math.floor(minutesDecimal)
+      const seconds = ((minutesDecimal - minutes) * 60).toFixed(2)
+      
+      let direction = ""
+      if (isLatitude) {
+        direction = decimal >= 0 ? "LU" : "LS"
+      } else {
+        direction = decimal >= 0 ? "BT" : "BB"
+      }
+      
+      return `${degrees}°${minutes}'${seconds}" ${direction}`
+    }
+
+    return `${formatDMS(lat, true)}, ${formatDMS(lon, false)}`
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,12 +126,14 @@ export function LocationManagement() {
     }
 
     try {
+      const coords = parseCoordinates(formData.coordinates)
+      
       const locationData: CreateLocationData | UpdateLocationData = {
         name: formData.name.trim(),
         code: formData.code.trim().toUpperCase(),
         description: formData.description.trim() || undefined,
-        latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
-        longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
       }
 
       if (editingLocation) {
@@ -92,8 +157,7 @@ export function LocationManagement() {
       name: location.name,
       code: location.code,
       description: location.description || "",
-      latitude: location.latitude?.toString() || "",
-      longitude: location.longitude?.toString() || ""
+      coordinates: formatCoordinates(location.latitude, location.longitude)
     })
     setIsDialogOpen(true)
   }
@@ -226,31 +290,18 @@ export function LocationManagement() {
                           disabled={mutationLoading}
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="latitude">Latitude</Label>
-                          <Input
-                            id="latitude"
-                            type="number"
-                            step="any"
-                            value={formData.latitude}
-                            onChange={(e) => setFormData(prev => ({ ...prev, latitude: e.target.value }))}
-                            placeholder="-90 hingga 90"
-                            disabled={mutationLoading}
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="longitude">Longitude</Label>
-                          <Input
-                            id="longitude"
-                            type="number"
-                            step="any"
-                            value={formData.longitude}
-                            onChange={(e) => setFormData(prev => ({ ...prev, longitude: e.target.value }))}
-                            placeholder="-180 hingga 180"
-                            disabled={mutationLoading}
-                          />
-                        </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="coordinates">Koordinat (Opsional)</Label>
+                        <Input
+                          id="coordinates"
+                          value={formData.coordinates}
+                          onChange={(e) => setFormData(prev => ({ ...prev, coordinates: e.target.value }))}
+                          placeholder="Contoh: 7°15'30&quot; LS, 110°25'45&quot; BT atau -7.2583, 110.4292"
+                          disabled={mutationLoading}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Format: DMS (7°15'30&quot; LS, 110°25'45&quot; BT) atau Desimal (-7.2583, 110.4292)
+                        </p>
                       </div>
                     </div>
                     <DialogFooter>
@@ -296,7 +347,7 @@ export function LocationManagement() {
                     <TableCell>
                       {location.latitude && location.longitude ? (
                         <div className="text-sm">
-                          <div>{location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}</div>
+                          <div className="font-mono">{formatCoordinates(location.latitude, location.longitude)}</div>
                         </div>
                       ) : (
                         <span className="text-muted-foreground">-</span>
